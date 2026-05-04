@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D Klotski Puzzle</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Poppins', sans-serif;
+            touch-action: none; /* Prevents pull-to-refresh and scrolling on mobile */
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* UI Elements */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 10;
+        }
+
+        header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        h1 {
+            margin: 0;
+            color: #fff;
+            font-size: 24px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            pointer-events: auto;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        #instructions {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            padding-bottom: 30px;
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        /* Win Overlay */
+        #win-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden; /* Added to completely remove interaction when hidden */
+            pointer-events: none;
+            transition: opacity 0.5s ease, visibility 0.5s;
+            z-index: 20;
+        }
+
+        #win-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transition: opacity 0.5s ease, visibility 0s;
+        }
+
+        /* Crucial Fix: ensure button inside hidden overlay cannot intercept clicks */
+        #win-overlay:not(.active) button {
+            pointer-events: none; 
+        }
+
+        #win-overlay h2 {
+            color: #ef4444;
+            font-size: 48px;
+            margin: 0 0 20px 0;
+            text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 20px; }
+            button { padding: 8px 16px; font-size: 12px; }
+            #win-overlay h2 { font-size: 36px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-layer">
+        <header>
+            <h1>Klotski</h1>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button id="prev-level-btn" onclick="changeLevel(-1)" style="padding: 10px 15px;" disabled>◀</button>
+                <span id="level-display" style="color:white; font-weight:800; font-size: 16px; margin: 0 5px; text-transform: uppercase; letter-spacing: 1px;">Level 1</span>
+                <button id="next-level-btn" onclick="changeLevel(1)" style="padding: 10px 15px;" disabled>▶</button>
+                <button onclick="resetGame()" style="margin-left: 10px;">Restart</button>
+            </div>
+        </header>
+        <div id="instructions">
+            Slide the Red Block to the bottom exit.
+        </div>
+    </div>
+
+    <div id="win-overlay">
+        <h2 id="win-title">Level Cleared!</h2>
+        <button id="win-btn" onclick="nextLevel()">Next Level</button>
+    </div>
+
+    <!-- Include Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- Core Variables ---
+        let scene, camera, renderer, controls;
+        let clock;
+        let raycaster, pointer;
+        
+        // --- Game State ---
+        const GRID_W = 4;
+        const GRID_H = 5;
+        let grid = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
+        let blocks = [];
+        let isGameWon = false;
+
+        // --- Interaction State ---
+        let selectedBlock = null;
+        let initialGrabPoint = new THREE.Vector3();
+        let pointerDownNDC = new THREE.Vector2();
+        let startPos = new THREE.Vector3();
+        let dragAxis = null; // 'x' or 'z'
+        let moveBounds = { minX: 0, maxX: 0, minZ: 0, maxZ: 0 };
+        let intersectionPoint = new THREE.Vector3(); 
+        
+        // --- Audio State ---
+        let audioCtx, slideNoiseNode, slideGainNode;
+        let lastSelectedBlockPos = new THREE.Vector3();
+
+        // Animation queue
+        let activeTweens = [];
+
+        // --- Level Progression (10 Levels) ---
+        const LEVELS = [
+            // Level 1: Tutorial (Very Easy)
+            [
+                { id: 'main', type: 0, w: 2, h: 2, lx: 1, ly: 2 },
+                { id: 'p1',   type: 3, w: 1, h: 1, lx: 1, ly: 4 },
+                { id: 'p2',   type: 3, w: 1, h: 1, lx: 2, ly: 4 }
+            ],
+            // Level 2: Simple
+            [
+                { id: 'main', type: 0, w: 2, h: 2, lx: 1, ly: 1 },
+                { id: 'h1',   type: 2, w: 2, h: 1, lx: 1, ly: 3 },
+                { id: 'p1',   type: 3, w: 1, h: 1, lx: 0, ly: 4 },
+                { id: 'p2',   type: 3, w: 1, h: 1, lx: 3, ly: 4 }
+            ],
+            // Level 3: Easy (Intro to vertical blocks)
+            [
+                { id: 'main', type: 0, w: 2, h: 2, lx: 1, ly: 0 },
+                { id: 'v1',   type: 1, w: 1, h: 2, lx: 0, ly: 0 },
+                { id: 'v2',   type: 1, w: 1, h: 2, lx: 3, ly: 0 },
+                { id: 'h1',   type: 2, w: 2, h: 1, lx: 1, ly: 2 },
+                { id: 'p1',   type: 3, w: 1, h: 1, lx: 1, ly: 3 },
+                { id: 'p2',   type: 3, w: 1, h: 1, lx: 2, ly: 3 }
+            ],
+            // Level 4: The H-shape (Medium)
+            [
+                { id: 'main', type: 0, w: 2, h: 2, lx: 1, ly: 0 },
+                { id: 'v1',   type: 1, w: 1, h: 2, lx: 0, ly: 0 },
+                { id: 'v2',   type: 1, w: 1, h: 2, lx: 3, ly: 0 },
+                { id: 'v3',   type: 1, w: 1, h: 2, lx: 0, ly: 2 },
+                { id: 'v4',   type: 1, w: 1, h: 2, lx: 3, ly: 2 },
+                { id: 'h1',   type: 2, w: 2, h: 1, lx: 1, ly: 2 }
+            ],
+            // Level 5: Horizontal Wall (Medium)
+            [
+                { id: 'main', type: 0, w: 2, h: 2, lx: 1, ly: 0 },
+                { id: 'h1',   type: 2, w: 2, h: 1, lx: 1, ly: 2 },
+                { id: 'h2',   type: 2, w: 2, h: 1, lx: 1, ly: 3 },
+                { id: 'v1',   type: 1, w: 1, h: 2, lx: 0, ly: 0 },
+                { id: 'v2',   type: 1, w: 1, h: 2, lx: 3, ly: 0 },
+                { id: 'p1',   type: 3, w: 1, h: 1, lx: 0, ly: 2 },
+                { id: 'p2',   type: 3, w: 1, h: 1, lx: 3, ly: 2 }
+            ],
+            // Level 6: Blockade (Medium-Hard)
+            [
+                { id: 'main', type: 0, w: 2, h: 2, lx: 1, ly: 0 },
+                { id: 'v1',   type: 1, w: 1, h: 2, lx: 0, ly: 0 },
+                { id: 'v2',   type: 1, w: 1, h: 2, lx: 3, ly: 0 },
+                { id: 'h1',   type: 2, w: 2, h: 1, lx: 0, ly: 2 },
+                { id: 'h2',   type: 2, w: 2, h: 1, lx: 2, ly: 2 },
+                { id: 'p1',   type: 3, w: 1, h: 1, lx: 1, ly: 3 },
+                { id: 'p2',   type: 3, w: 1, h: 1, lx: 2, ly: 3 },
+                { id: 'p3',   type: 3, w: 1, h: 1, lx: 0, ly: 4 },
+                { id: 'p4',   type: 3, w: 1, h: 1, lx: 3, ly: 4 }
+            ],
+            // Level 7: Four Corners (Hard)
+            [
+                { id: 'main', type: 0, w: 2, h: 2, lx: 1, ly: 0 },
+                { id: 'v1',   type: 1, w: 1, h: 2, lx: 0, ly: 0 },
+                { id: 'v2',   type: 1, w: 1, h: 2, lx: 3, ly: 0 },
+                { id: 'v3',   type: 1, w: 1, h: 2, lx: 1, ly: 2 },
+                { id: 'v4',   type: 1, w: 1, h: 2, lx: 2, ly: 2 },
+                { id: 'p1',   type: 3, w: 1, h: 1, lx: 0, ly: 2 },
+                { id: 'p2',   type: 3, w: 1, h: 1, lx: 3, ly: 2 },
+                { id: 'p3',   type: 3, w: 1, h: 1, lx: 0, ly: 4 },
+                { id: 'p4',   type: 3, w: 1, h: 1, lx: 3, ly: 4 }
+            ],
+            // Level 8: The Wedge (Hard)
+            [
+                { id: 'main', type: 0, w: 2, h: 2, lx: 1, ly: 0 },
+                { id: 'v1',   type: 1, w: 1, h: 2, lx: 0, ly: 0 },
+                { id: 'v2',   type: 1, w: 1, h: 2, lx: 3, ly: 0 },
+                { id: 'v3',   type: 1, w: 1, h: 2, lx: 0, ly: 2 },
+                { id: 'v4',   type: 1, w: 1, h: 2, lx: 3, ly: 2 },
+                { id: 'h1',   type: 2, w: 2, h: 1, lx: 1, ly: 3 },
+                { id: 'p1',   type: 3, w: 1, h: 1, lx: 1, ly: 2 },
+                { id: 'p2',   type: 3, w: 1, h: 1, lx: 2, ly: 2 },
+                { id: 'p3',   type: 3, w: 1, h: 1, lx: 1, ly: 4 },
+                { id: 'p4',   type: 3, w: 1, h: 1, lx: 2, ly: 4 }
+            ],
+            // Level 9: Double Trouble (Very Hard)
+            [
+                { id: 'main', type: 0, w: 2, h: 2, lx: 1, ly: 0 },
+                { id: 'v1',   type: 1, w: 1, h: 2, lx: 0, ly: 0 },
+                { id: 'v2',   type: 1, w: 1, h: 2, lx: 3, ly: 0 },
+                { id: 'v3',   type: 1, w: 1, h: 2, lx: 0, ly: 2 },
+                { id: 'v4',   type: 1, w: 1, h: 2, lx: 3, ly: 2 },
+                { id: 'p1',   type: 3, w: 1, h: 1, lx: 1, ly: 2 },
+                { id: 'p2',   type: 3, w: 1, h: 1, lx: 2, ly: 2 },
+                { id: 'h1',   type: 2, w: 2, h: 1, lx: 1, ly: 3 },
+                { id: 'p3',   type: 3, w: 1, h: 1, lx: 0, ly: 4 },
+                { id: 'p4',   type: 3, w: 1, h: 1, lx: 3, ly: 4 }
+            ],
+            // Level 10: Classic Hua Rong Dao (Expert)
+            [
+                { id: 'main', type: 0, w: 2, h: 2, lx: 1, ly: 0 },
+                { id: 'v1',   type: 1, w: 1, h: 2, lx: 0, ly: 0 },
+                { id: 'v2',   type: 1, w: 1, h: 2, lx: 3, ly: 0 },
+                { id: 'v3',   type: 1, w: 1, h: 2, lx: 0, ly: 2 },
+                { id: 'v4',   type: 1, w: 1, h: 2, lx: 3, ly: 2 },
+                { id: 'h1',   type: 2, w: 2, h: 1, lx: 1, ly: 2 },
+                { id: 'p1',   type: 3, w: 1, h: 1, lx: 1, ly: 3 },
+                { id: 'p2',   type: 3, w: 1, h: 1, lx: 2, ly: 3 },
+                { id: 'p3',   type: 3, w: 1, h: 1, lx: 0, ly: 4 },
+                { id: 'p4',   type: 3, w: 1, h: 1, lx: 3, ly: 4 }
+            ]
+        ];
+
+        let currentLevelIndex = 0;
+        let highestUnlockedLevel = 0;
+
+        function updateLevelButtons() {
+            document.getElementById('prev-level-btn').disabled = (currentLevelIndex === 0);
+            document.getElementById('next-level-btn').disabled = (currentLevelIndex >= highestUnlockedLevel);
+        }
+
+        function changeLevel(dir) {
+            let newLevel = currentLevelIndex + dir;
+            if (newLevel >= 0 && newLevel <= highestUnlockedLevel && newLevel < LEVELS.length) {
+                currentLevelIndex = newLevel;
+                document.getElementById('level-display').innerText = "Level " + (currentLevelIndex + 1);
+                updateLevelButtons();
+                resetGame();
+            }
+        }
+
+        function nextLevel() {
+            if (currentLevelIndex < LEVELS.length - 1) {
+                changeLevel(1);
+            } else {
+                currentLevelIndex = 0;
+                changeLevel(0); // Reset to level 1 if they beat the game
+            }
+        }
+
+        // --- Materials ---
+        const materials = {
+            main: new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3, metalness: 0.1 }), // Red
+            vert: new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.3, metalness: 0.1 }), // Blue
+            horz: new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.3, metalness: 0.1 }), // Blue
+            pawn: new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.1 }), // Yellow
+            boardBase: new THREE.MeshStandardMaterial({ color: 0x292524, roughness: 0.8, metalness: 0.1 }), // Dark Wood
+            boardWall: new THREE.MeshStandardMaterial({ color: 0x44403c, roughness: 0.7, metalness: 0.1 })  // Medium Wood
+        };
+
+        // --- Init ---
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a1a);
+            clock = new THREE.Clock();
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 8, 7);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Orbit Controls setup
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2.05; 
+            controls.minDistance = 4;
+            controls.maxDistance = 20;
+            controls.enablePan = false; 
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xfff0dd, 0.8);
+            dirLight.position.set(5, 10, 5);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.left = -5;
+            dirLight.shadow.camera.right = 5;
+            dirLight.shadow.camera.top = 5;
+            dirLight.shadow.camera.bottom = -5;
+            scene.add(dirLight);
+
+            // Interaction tools
+            raycaster = new THREE.Raycaster();
+            pointer = new THREE.Vector2();
+
+            // Build Game
+            createBoard();
+            buildLevel();
+
+            // Events
+            window.addEventListener('resize', onWindowResize);
+            
+            const canvas = renderer.domElement;
+            canvas.addEventListener('pointerdown', onPointerDown);
+            canvas.addEventListener('pointermove', onPointerMove);
+            canvas.addEventListener('pointerup', onPointerUp);
+            canvas.addEventListener('pointerleave', onPointerUp);
+            canvas.addEventListener('pointercancel', onPointerUp);
+        }
+
+        function createBoard() {
+            const trayGroup = new THREE.Group();
+
+            // Base
+            const baseGeo = new THREE.BoxGeometry(4.4, 0.2, 5.4);
+            const base = new THREE.Mesh(baseGeo, materials.boardBase);
+            base.position.y = -0.1;
+            base.receiveShadow = true;
+            trayGroup.add(base);
+
+            // Walls (Left, Right, Top)
+            const wallGeoVert = new THREE.BoxGeometry(0.2, 0.4, 5.4);
+            const wallGeoHorz = new THREE.BoxGeometry(4.4, 0.4, 0.2);
+            
+            const wallLeft = new THREE.Mesh(wallGeoVert, materials.boardWall);
+            wallLeft.position.set(-2.1, 0.1, 0);
+            wallLeft.castShadow = true; wallLeft.receiveShadow = true;
+            trayGroup.add(wallLeft);
+
+            const wallRight = new THREE.Mesh(wallGeoVert, materials.boardWall);
+            wallRight.position.set(2.1, 0.1, 0);
+            wallRight.castShadow = true; wallRight.receiveShadow = true;
+            trayGroup.add(wallRight);
+
+            const wallTop = new THREE.Mesh(wallGeoHorz, materials.boardWall);
+            wallTop.position.set(0, 0.1, -2.6);
+            wallTop.castShadow = true; wallTop.receiveShadow = true;
+            trayGroup.add(wallTop);
+
+            // Bottom walls (leaving center 2-unit gap)
+            const bottomWallGeo = new THREE.BoxGeometry(1.2, 0.4, 0.2);
+            const wallBotL = new THREE.Mesh(bottomWallGeo, materials.boardWall);
+            wallBotL.position.set(-1.6, 0.1, 2.6);
+            wallBotL.castShadow = true; wallBotL.receiveShadow = true;
+            trayGroup.add(wallBotL);
+
+            const wallBotR = new THREE.Mesh(bottomWallGeo, materials.boardWall);
+            wallBotR.position.set(1.6, 0.1, 2.6);
+            wallBotR.castShadow = true; wallBotR.receiveShadow = true;
+            trayGroup.add(wallBotR);
+
+            scene.add(trayGroup);
+        }
+
+        function getMaterial(type) {
+            switch(type) {
+                case 0: return materials.main;
+                case 1: return materials.vert;
+                case 2: return materials.horz;
+                case 3: return materials.pawn;
+            }
+        }
+
+        function getWorldPos(lx, ly, w, h) {
+            return {
+                x: lx + w/2 - 2,
+                z: ly + h/2 - 2.5
+            };
+        }
+
+        function buildLevel() {
+            blocks.forEach(b => scene.remove(b.mesh));
+            blocks = [];
+            grid = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
+
+            LEVELS[currentLevelIndex].forEach(data => {
+                const block = { ...data };
+                
+                const gap = 0.04;
+                const geo = new THREE.BoxGeometry(block.w - gap, 0.40, block.h - gap);
+                
+                const mesh = new THREE.Mesh(geo, getMaterial(block.type));
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                
+                const pos = getWorldPos(block.lx, block.ly, block.w, block.h);
+                mesh.position.set(pos.x, 0.19, pos.z);
+                
+                mesh.userData.block = block;
+                block.mesh = mesh;
+                
+                scene.add(mesh);
+                blocks.push(block);
+
+                for(let y=0; y<block.h; y++) {
+                    for(let x=0; x<block.w; x++) {
+                        grid[block.ly + y][block.lx + x] = block;
+                    }
+                }
+            });
+        }
+
+        function resetGame() {
+            document.getElementById('win-overlay').classList.remove('active');
+            isGameWon = false;
+            selectedBlock = null;
+            activeTweens = [];
+            buildLevel();
+        }
+
+        // --- Audio System ---
+        function initAudio() {
+            if (audioCtx) {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                return;
+            }
+            
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            audioCtx = new AudioContext();
+
+            // Synthesize Slide Friction Sound ("ffff")
+            const bufferSize = audioCtx.sampleRate * 2; // 2 seconds loop
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1; // White noise
+            }
+
+            slideNoiseNode = audioCtx.createBufferSource();
+            slideNoiseNode.buffer = buffer;
+            slideNoiseNode.loop = true;
+
+            // Filter to make it sound like woody friction instead of TV static
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 400; 
+            filter.Q.value = 0.5;
+
+            slideGainNode = audioCtx.createGain();
+            slideGainNode.gain.value = 0; // Start completely silent
+
+            slideNoiseNode.connect(filter);
+            filter.connect(slideGainNode);
+            slideGainNode.connect(audioCtx.destination);
+            
+            slideNoiseNode.start();
+        }
+
+        function playSnapSound() {
+            if (!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'triangle'; // Good for woody/hollow sounds
+            
+            // Rapid pitch drop for a "thock"
+            osc.frequency.setValueAtTime(250, t);
+            osc.frequency.exponentialRampToValueAtTime(40, t + 0.05);
+
+            // Very fast amplitude envelope (sharp click, keep volume low at 0.15 max)
+            gain.gain.setValueAtTime(0.15, t); 
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start(t);
+            osc.stop(t + 0.05);
+        }
+
+        function updateSlideVolume(velocity) {
+            if (!slideGainNode) return;
+            // Scale volume based on drag speed, clamp to a very low subtle max (0.05)
+            const targetVol = Math.min(velocity * 0.8, 0.05); 
+            slideGainNode.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.05);
+        }
+
+        // --- Interaction Logic ---
+
+        function getIntersects(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            raycaster.setFromCamera(pointer, camera);
+            return raycaster.intersectObjects(blocks.map(b => b.mesh));
+        }
+
+        function onPointerDown(event) {
+            if (isGameWon || selectedBlock) return;
+
+            initAudio(); // Required to unlock Web Audio API on user interaction
+
+            const intersects = getIntersects(event);
+            if (intersects.length > 0) {
+                const mesh = intersects[0].object;
+                
+                if (activeTweens.some(t => t.block.mesh === mesh)) return;
+
+                if (event.pointerId) {
+                    renderer.domElement.setPointerCapture(event.pointerId);
+                }
+
+                selectedBlock = mesh.userData.block;
+                
+                // Track exact 3D click point and Screen-space origin for bulletproof math
+                initialGrabPoint.copy(intersects[0].point);
+                pointerDownNDC.copy(pointer);
+                startPos.copy(mesh.position);
+                lastSelectedBlockPos.copy(mesh.position);
+                dragAxis = null;
+
+                calculateMoveBounds(selectedBlock);
+                
+                // Pre-lock axis if mathematically constrained
+                const canMoveX = moveBounds.minX !== moveBounds.maxX;
+                const canMoveZ = moveBounds.minZ !== moveBounds.maxZ;
+                if (canMoveX && !canMoveZ) dragAxis = 'x';
+                else if (canMoveZ && !canMoveX) dragAxis = 'z';
+
+                // Visual cue
+                mesh.position.y = 0.25; 
+                document.body.style.cursor = 'grabbing';
+                controls.enabled = false; 
+            }
+        }
+
+        function calculateMoveBounds(block) {
+            const { lx, ly, w, h } = block;
+            let left = 0, right = 0, up = 0, down = 0;
+
+            for (let x = lx - 1; x >= 0; x--) {
+                let clear = true;
+                for (let y = ly; y < ly + h; y++) if (grid[y][x] !== null) clear = false;
+                if (clear) left++; else break;
+            }
+
+            for (let x = lx + w; x < GRID_W; x++) {
+                let clear = true;
+                for (let y = ly; y < ly + h; y++) if (grid[y][x] !== null) clear = false;
+                if (clear) right++; else break;
+            }
+
+            for (let y = ly - 1; y >= 0; y--) {
+                let clear = true;
+                for (let x = lx; x < lx + w; x++) if (grid[y][x] !== null) clear = false;
+                if (clear) up++; else break;
+            }
+
+            let isMainAtExit = (block.id === 'main' && lx === 1);
+            let limitZ = isMainAtExit ? GRID_H + 2 : GRID_H;
+
+            for (let y = ly + h; y < limitZ; y++) {
+                let clear = true;
+                if (y < GRID_H) {
+                    for (let x = lx; x < lx + w; x++) if (grid[y][x] !== null) clear = false;
+                }
+                if (clear) down++; else break;
+            }
+
+            moveBounds.minX = startPos.x - left;
+            moveBounds.maxX = startPos.x + right;
+            moveBounds.minZ = startPos.z - up;
+            moveBounds.maxZ = startPos.z + down;
+        }
+
+        function onPointerMove(event) {
+            if (!selectedBlock) return;
+            event.preventDefault(); 
+            getIntersects(event); // Updates raycaster
+
+            // 1. Screen-Space Intent Determination
+            // This reliably figures out which direction the user is swiping ON SCREEN,
+            // avoiding all physics glitches when dragging facets from side-angles.
+            if (!dragAxis) {
+                let dxScreen = pointer.x - pointerDownNDC.x;
+                let dyScreen = pointer.y - pointerDownNDC.y;
+                let screenDistSq = dxScreen * dxScreen + dyScreen * dyScreen;
+
+                if (screenDistSq > 0.0001) { // Low threshold for instant responsive lock
+                    // Project from the exact grabbed facet coordinate, NOT the block center.
+                    // This perfectly handles clicks on extreme edges/sides at weird camera angles.
+                    let p = initialGrabPoint.clone();
+                    let pScreen = p.clone().project(camera);
+                    let pX = p.clone().add(new THREE.Vector3(1, 0, 0)).project(camera);
+                    let pZ = p.clone().add(new THREE.Vector3(0, 0, 1)).project(camera);
+
+                    let vX = new THREE.Vector2(pX.x - pScreen.x, pX.y - pScreen.y);
+                    let vZ = new THREE.Vector2(pZ.x - pScreen.x, pZ.y - pScreen.y);
+
+                    if (vX.lengthSq() > 0.00001) vX.normalize();
+                    if (vZ.lengthSq() > 0.00001) vZ.normalize();
+
+                    let vMouse = new THREE.Vector2(dxScreen, dyScreen).normalize();
+
+                    // Compare mouse swipe against projected axes
+                    let dotX = Math.abs(vMouse.dot(vX));
+                    let dotZ = Math.abs(vMouse.dot(vZ));
+
+                    dragAxis = dotX > dotZ ? 'x' : 'z';
+
+                    // Smart auto-correct
+                    if (dragAxis === 'x' && moveBounds.minX === moveBounds.maxX) dragAxis = 'z';
+                    if (dragAxis === 'z' && moveBounds.minZ === moveBounds.maxZ) dragAxis = 'x';
+                }
+            }
+
+            // 2. Dynamic Camera-Facing Plane Intersection
+            // Creates a mathematical plane that contains the locked movement axis 
+            // and physically tilts to face the camera lens as much as possible.
+            // This guarantees your cursor stays locked to the exact pixel/facet you grabbed!
+            if (dragAxis) {
+                let axisVec = dragAxis === 'x' ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+                let camToGrab = new THREE.Vector3().subVectors(camera.position, initialGrabPoint);
+                
+                // Cross-product magic to find the perfect camera-facing plane
+                let cross1 = new THREE.Vector3().crossVectors(camToGrab, axisVec);
+                let planeNormal = new THREE.Vector3().crossVectors(axisVec, cross1).normalize();
+                
+                let movementPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(planeNormal, initialGrabPoint);
+
+                if (raycaster.ray.intersectPlane(movementPlane, intersectionPoint)) {
+                    let t;
+                    if (dragAxis === 'x') {
+                        t = intersectionPoint.x - initialGrabPoint.x;
+                        selectedBlock.mesh.position.x = THREE.MathUtils.clamp(startPos.x + t, moveBounds.minX, moveBounds.maxX);
+                        selectedBlock.mesh.position.z = startPos.z; // Ensure locked perfectly
+                    } else {
+                        t = intersectionPoint.z - initialGrabPoint.z;
+                        selectedBlock.mesh.position.z = THREE.MathUtils.clamp(startPos.z + t, moveBounds.minZ, moveBounds.maxZ);
+                        selectedBlock.mesh.position.x = startPos.x; // Ensure locked perfectly
+                    }
+                }
+            }
+        }
+
+        function onPointerUp(event) {
+            if (!selectedBlock) return;
+
+            if (event.pointerId) {
+                renderer.domElement.releasePointerCapture(event.pointerId);
+            }
+
+            selectedBlock.mesh.position.y = 0.19;
+            document.body.style.cursor = 'default';
+
+            const currX = selectedBlock.mesh.position.x;
+            const currZ = selectedBlock.mesh.position.z;
+
+            let deltaLx = Math.round(currX - startPos.x);
+            let deltaLy = Math.round(currZ - startPos.z);
+
+            deltaLx = THREE.MathUtils.clamp(deltaLx, moveBounds.minX - startPos.x, moveBounds.maxX - startPos.x);
+            deltaLy = THREE.MathUtils.clamp(deltaLy, moveBounds.minZ - startPos.z, moveBounds.maxZ - startPos.z);
+
+            if (deltaLx !== 0 || deltaLy !== 0) {
+                for (let y = 0; y < selectedBlock.h; y++) {
+                    for (let x = 0; x < selectedBlock.w; x++) {
+                        if (selectedBlock.ly + y < GRID_H) { 
+                            grid[selectedBlock.ly + y][selectedBlock.lx + x] = null;
+                        }
+                    }
+                }
+                selectedBlock.lx += deltaLx;
+                selectedBlock.ly += deltaLy;
+                for (let y = 0; y < selectedBlock.h; y++) {
+                    for (let x = 0; x < selectedBlock.w; x++) {
+                        if (selectedBlock.ly + y < GRID_H) { 
+                            grid[selectedBlock.ly + y][selectedBlock.lx + x] = selectedBlock;
+                        }
+                    }
+                }
+            }
+
+            const perfectPos = getWorldPos(selectedBlock.lx, selectedBlock.ly, selectedBlock.w, selectedBlock.h);
+            snapBlock(selectedBlock, perfectPos.x, perfectPos.z);
+
+            selectedBlock = null;
+            controls.enabled = true; 
+        }
+
+        function snapBlock(block, tX, tZ) {
+            const startX = block.mesh.position.x;
+            const startZ = block.mesh.position.z;
+            
+            if(Math.abs(startX - tX) < 0.01 && Math.abs(startZ - tZ) < 0.01) {
+                block.mesh.position.set(tX, 0.19, tZ);
+                checkWinCondition(block);
+                return;
+            }
+
+            activeTweens.push({
+                block: block,
+                startX: startX, startZ: startZ,
+                targetX: tX, targetZ: tZ,
+                progress: 0,
+                duration: 0.12 
+            });
+        }
+
+        function checkWinCondition(block) {
+            if (block.id === 'main' && block.ly >= 4) {
+                isGameWon = true;
+
+                // Unlock the next level
+                if (currentLevelIndex === highestUnlockedLevel && currentLevelIndex < LEVELS.length - 1) {
+                    highestUnlockedLevel++;
+                    updateLevelButtons();
+                }
+                
+                const winTitle = document.getElementById('win-title');
+                const winBtn = document.getElementById('win-btn');
+                
+                if (currentLevelIndex === LEVELS.length - 1) {
+                    winTitle.innerText = "You Beat The Game!";
+                    winBtn.innerText = "Play Again";
+                } else {
+                    winTitle.innerText = "Level Cleared!";
+                    winBtn.innerText = "Next Level";
+                }
+                
+                document.getElementById('win-overlay').classList.add('active');
+            }
+        }
+
+        // --- Core Loops ---
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            if (controls) controls.update(); 
+
+            // Dynamically calculate movement speed for sliding audio
+            if (selectedBlock) {
+                let dist = lastSelectedBlockPos.distanceTo(selectedBlock.mesh.position);
+                updateSlideVolume(dist / (delta || 0.016)); // Avoid div by zero
+                lastSelectedBlockPos.copy(selectedBlock.mesh.position);
+            } else {
+                updateSlideVolume(0); // Fade out instantly if no block selected
+            }
+
+            for (let i = activeTweens.length - 1; i >= 0; i--) {
+                let t = activeTweens[i];
+                t.progress += delta / t.duration;
+
+                if (t.progress >= 1) {
+                    t.block.mesh.position.x = t.targetX;
+                    t.block.mesh.position.z = t.targetZ;
+                    if(t.onComplete) {
+                        t.onComplete();
+                    } else {
+                        playSnapSound(); // Play woody thock on snapping to grid
+                        checkWinCondition(t.block);
+                    }
+                    activeTweens.splice(i, 1);
+                } else {
+                    const ease = 1 - (1 - t.progress) * (1 - t.progress);
+                    t.block.mesh.position.x = t.startX + (t.targetX - t.startX) * ease;
+                    t.block.mesh.position.z = t.startZ + (t.targetZ - t.startZ) * ease;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+    </script>
+</body>
+</html>
