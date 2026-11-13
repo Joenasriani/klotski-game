@@ -21,8 +21,23 @@ const launch={headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swi
   await context.route('**/*', route => route.request().url().startsWith(url) ? route.continue() : route.abort());await page.reload();await page.waitForFunction(()=>!renderingFailed && blocks.length===3);
   await page.screenshot({path:'qa-results/desktop.png'});
   assert.equal(await page.title(),'3D Klotski Puzzle');
+  // Exercise actual Chromium touch input before the full mouse playthrough.
+  const touch=await context.newCDPSession(page);
+  const touchPoints=await page.evaluate(()=>{
+   const b=blocks.find(b=>b.id==='p1');const p=b.mesh.position.clone();p.y=0.4;const q=p.clone();q.x-=1;
+   const screen=v=>{v.project(camera);return {x:(v.x+1)*innerWidth/2,y:(1-v.y)*innerHeight/2,id:1};};
+   return {start:screen(p),end:screen(q)};
+  });
+  await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touchPoints.start]});
+  await touch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touchPoints.end]});
+  await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await page.waitForFunction(()=>blocks.find(b=>b.id==='p1').lx===0&&activeTweens.length===0);
+  await page.reload();await page.waitForFunction(()=>blocks.find(b=>b.id==='p1').lx===0);
+  await page.locator('#restart-btn').click();
+  console.log('PASS: real Chromium touch drag, save/restore, and restart');
   const paths=JSON.parse(fs.readFileSync('/tmp/klotski-solutions.json'));
   for(let level=0;level<paths.length;level++){
+   if(level===9) await page.screenshot({path:'qa-results/level-10.png'});
    for(const move of paths[level]){
     const pts=await page.evaluate(m=>{
      const b=blocks.find(b=>b.id===m.id);const p=b.mesh.position.clone();p.y=0.4;
