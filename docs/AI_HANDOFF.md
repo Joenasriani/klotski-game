@@ -4,9 +4,9 @@ Updated: 13 November 2026. Read alongside PLAYSTORE_READINESS.md.
 
 ## Roadmap and gate
 
-User order: Klotski → Ascension → Paradigm Shift. Finish Klotski source reconciliation and readiness audit before Android packaging. Do not claim Play Store readiness from a syntax check or solver result. Do not create store submissions or sign with invented credentials.
+Follow [ROADMAP.md](ROADMAP.md), the authoritative plan. Current focus is **Klotski only**. User order: Klotski → Ascension → Paradigm Shift. Finish Klotski source reconciliation, documentation, readiness audit, focused fixes, verification, and Android preparation before advancing. Source reconciliation and the initial readiness audit are complete; readiness fixes and device verification remain open. Do not claim Play Store readiness from a syntax check or solver result. Do not create store submissions or sign with invented credentials.
 
-Located next repositories: `Joenasriani/ascension-opt` and `Joenasriani/paradigm-shift-game`. These have been located only; they have not been audited in this stage.
+Located next repositories: `Joenasriani/ascension-opt` and `Joenasriani/paradigm-shift-game`. Preliminary read-only comparisons were made, but neither repository was modified and neither has a completed readiness audit. They remain queued; do not resume work on them while Klotski is the active title.
 
 ## Baseline and provenance
 
@@ -18,7 +18,16 @@ Located next repositories: `Joenasriani/ascension-opt` and `Joenasriani/paradigm
 - Current index.html is the live response with only itch.io's trailing injected `https://static.itch.io/htmlgame.js` script removed. This script belongs to itch.io hosting and is not game source. One changed line also has trailing whitespace normalized.
 - No later unobserved local or private upload is asserted to be covered.
 
+## Current repository state
+
+Source synchronization was applied to `main` in commit `960dcf646f7cd4d9bba1e51b5af991797acd6276`. This is no longer a draft-branch-only change. The live response was downloaded again on 13 November 2026 and retained the same SHA-256. The working baseline is the current main branch plus the current documentation; `fd25d4c` is historical only. itch.io has not been changed. Do not describe this as a newly verified working Android release.
+
 ## File map
+
+- `README.md`: current game overview, run instructions, status, and maintenance links.
+- `docs/ROADMAP.md`: locked title order, scope, and phase gates.
+- `docs/AI_HANDOFF.md`: this single current technical handoff.
+- `docs/PLAYSTORE_READINESS.md`: findings, evidence, and unresolved checks.
 
 `index.html` contains all CSS, markup, level definitions, rendering, input, audio, state, and animation. No package manager, build scripts, Android project, automated tests, license file, or bundled dependencies exist in the original repository.
 

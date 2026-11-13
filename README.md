@@ -6,7 +6,7 @@ Play the published browser game: https://joenasr.itch.io/klotski
 
 ## Current state
 
-This audit branch restores the observed live game source retrieved on 13 November 2026. Before this reconciliation, `main` at `fd25d4c493bf2c472af426573658b63308778f8f` lagged behind the itch.io upload. Responsive layout, startup camera framing, tray geometry fixes, and lower sliding volume were missing.
+The `main` branch is synchronized with the observed live game source retrieved and rechecked on 13 November 2026. Before this reconciliation, `main` at `fd25d4c493bf2c472af426573658b63308778f8f` lagged behind the itch.io upload. Responsive layout, startup camera framing, tray geometry fixes, and lower sliding volume were missing.
 
 **Android / Play Store readiness: blocked.** No Android wrapper, APK, AAB, signing configuration, store asset suite, or device acceptance evidence is included. This is an audit baseline, not a release candidate.
 
@@ -29,6 +29,8 @@ Open http://localhost:8000 in a WebGL-capable browser. Internet is currently req
 - Progress exists only in memory and is lost on page reload.
 
 ## Maintenance
+
+Follow [the locked roadmap](docs/ROADMAP.md). **Current focus: Klotski only.** Ascension and Paradigm Shift are queued; do not begin their implementation or documentation updates during this stage.
 
 Read [the AI handoff](docs/AI_HANDOFF.md) and [the readiness audit](docs/PLAYSTORE_READINESS.md) before editing. The documentation is for developers and is not rendered inside the game.
 

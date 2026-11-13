@@ -4,7 +4,7 @@ Audit date: 13 November 2026. Verdict: **BLOCKED – do not package as release-r
 
 ## Source parity
 
-GitHub main at fd25d4c does not match the published itch.io build. The audit branch reconciles index.html to the observed live response, excluding itch.io's injected host script (and normalizing one changed line’s trailing whitespace). Differences include responsive UI and safe-area CSS, startup camera distance, tray wall/corner geometry, reduced sliding volume, and simplified tween completion. No puzzle layout changes were found. README and AI handoff were absent on main.
+Historical GitHub main at fd25d4c did not match the published itch.io build. Current `main` was reconciled in commit `960dcf646f7cd4d9bba1e51b5af991797acd6276`; index.html matches the observed live response, excluding itch.io's injected host script (and normalizing one changed line’s trailing whitespace). Differences include responsive UI and safe-area CSS, startup camera distance, tray wall/corner geometry, reduced sliding volume, and simplified tween completion. No puzzle layout changes were found. README and AI handoff were absent from the historical baseline; both now exist on main. The live response was rechecked on the same date and its hash was unchanged.
 
 ## Findings
 
@@ -34,7 +34,7 @@ All ten layouts have non-overlapping starting positions and were solvable in a b
 | Check | Result |
 | --- | --- |
 | Repository/history inspected | Pass; original baseline recorded |
-| Observed live source compared | Pass; differences identified and source reconciled on audit branch |
+| Observed live source compared | Pass; differences identified and source reconciled on main |
 | Original/live inline JavaScript syntax | Pass; node --check |
 | Ten layouts abstract solvability | Pass; 10/10 |
 | Published browser launch and UI | UI visible; board blocked by WebGL initialization error |
@@ -47,13 +47,15 @@ All ten layouts have non-overlapping starting positions and were solvable in a b
 
 ## Packaging gate and release sequence
 
-1. Reconcile source and maintain one current handoff (this audit branch).
+Follow [ROADMAP.md](ROADMAP.md). Current scope is Klotski only.
+
+1. Reconcile source and maintain one current handoff (complete on main).
 2. Fix readiness issues without changing level design; validate controls, state, audio, visuals, and all ten progression paths.
 3. Build Android shell with local assets; implement Back behavior, lifecycle, safe-area/edge-to-edge behavior, and minimal permissions.
 4. Verify on physical Android phones/tablets: offline launch, touch, rotation, background/resume, process restoration, performance, and completion.
 5. Prepare test APK and signed release AAB, versioning, dependency notices, app identity, and store assets.
 6. Complete Play Console declarations and applicable testing requirements using the actual developer account status. Do not infer account eligibility from this source audit.
-7. Advance to Ascension, then Paradigm Shift, applying the same evidence gates.
+7. Update itch.io with the verified release build, then advance to Ascension and Paradigm Shift in order after Klotski's stage is complete. Do not modify the queued titles during the active Klotski stage.
 
 Google Play publishes new apps using Android App Bundles; APK is the installable testing format. Current official policy checked on the audit date requires phone/tablet submissions to target Android 16 / API 36 or higher. Recheck at packaging time:
 
