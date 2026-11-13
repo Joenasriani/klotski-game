@@ -74,7 +74,7 @@ public final class MainActivity extends ComponentActivity {
                 view.destroy();
                 webView = null;
                 Button retry = new Button(MainActivity.this);
-                retry.setText("3D view stopped. Tap to restart Klotski");
+                retry.setText(R.string.graphics_retry);
                 retry.setOnClickListener(v -> { root.removeView(retry); createGameView(); });
                 root.addView(retry, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 return true;

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Klotski</string>
+    <string name="graphics_retry">3D view stopped. Tap to restart Klotski</string>
+</resources>
