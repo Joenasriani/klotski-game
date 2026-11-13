@@ -44,3 +44,13 @@ The published itch.io game was launched in cloud Chrome. UI appeared, but Three.
 ## Next work
 
 Address the ranked findings in PLAYSTORE_READINESS.md. First preserve this baseline, then implement focused fixes on a separate branch and validate in a WebGL-capable browser. Bundle licensed dependencies, persist and validate progress, handle WebGL failure/context loss, fix pointer ownership/lifecycle cleanup, verify responsive framing and controls, then create the Android wrapper and test on real Android hardware. Build a test APK and a signed release AAB only after these gates. Keep signing keys out of git.
+
+## Active readiness-fix branch
+
+`fix/klotski-android-readiness` contains focused readiness changes after main's live-source synchronization. Main/live remain the baseline until the fix branch is verified and merged. The live version has not been updated.
+
+Implemented on the branch: bundled Three.js/OrbitControls/Poppins and upstream license notices; versioned validated save data; mute preference; primary-pointer filtering and pointer-ID ownership; cancel/blur/pagehide/visibility cleanup; per-block geometry disposal on reset; graphics initialization/context-loss error screen; minimum 44 px button height; narrow-screen wrapping and resize zoom correction. No levels or drag-axis mathematics were redesigned.
+
+Tests: `node tests/state.cjs` passes 27 state/raycast/persistence/pointer/cleanup/fallback assertions using real Three.js math with DOM and renderer adapters. Its deliberate graphics-failure case prints an expected error. This is not a rendered UI test. The Chromium replay in `tests/browser.cjs` is being added for all ten levels, external-host blocking, saved wins, mute restoration, responsive bounds, and graphics fallback. Do not claim that replay passed before reading the actual CI result.
+
+Next: run the browser workflow, inspect screenshots and failures, fix regressions, then update this handoff with actual evidence. Android shell, physical-device testing, signing, store assets/declarations, and itch.io update remain pending. Follow ROADMAP.md; do not start Ascension.

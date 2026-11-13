@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>3D Klotski Puzzle</title>
+    <link rel="stylesheet" href="./vendor/poppins.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
 
         :root {
             --safe-top: env(safe-area-inset-top, 0px);
@@ -296,6 +296,12 @@
                 gap: 14px;
             }
         }
+        button { min-height: 44px; }
+        .level-nav-btn { min-width: 44px; width: 44px; }
+        #sound-btn { position: absolute; bottom: calc(50px + var(--safe-bottom)); right: calc(12px + var(--safe-right)); pointer-events: auto; }
+        #runtime-error { position: fixed; inset: 0; z-index: 100; background: #1a1a1a; color: white; display: grid; place-content: center; padding: 24px; text-align: center; }
+        #runtime-error[hidden] { display: none; }
+        @media (max-width: 380px) { header { flex-wrap: wrap; } .level-controls { margin-left: auto; } }
     </style>
 </head>
 <body>
@@ -306,25 +312,27 @@
         <header>
             <h1>Klotski</h1>
             <div class="level-controls">
-                <button id="prev-level-btn" class="level-nav-btn" onclick="changeLevel(-1)" disabled>◀</button>
+                <button aria-label="Previous level" id="prev-level-btn" class="level-nav-btn" onclick="changeLevel(-1)" disabled>◀</button>
                 <span id="level-display">Level 1</span>
-                <button id="next-level-btn" class="level-nav-btn" onclick="changeLevel(1)" disabled>▶</button>
+                <button aria-label="Next unlocked level" id="next-level-btn" class="level-nav-btn" onclick="changeLevel(1)" disabled>▶</button>
                 <button id="restart-btn" onclick="resetGame()">Restart</button>
             </div>
         </header>
         <div id="instructions">
-            Slide the Red Block to the bottom exit.
+            Slide the large red block to the bottom exit.
         </div>
     </div>
 
-    <div id="win-overlay">
+    <button id="sound-btn" aria-pressed="false" onclick="toggleSound()">Sound: On</button>
+    <div id="runtime-error" role="alert" hidden><h2>3D graphics unavailable</h2><p>Your device could not start or restore the game’s 3D view.</p><button onclick="location.reload()">Try again</button></div>
+    <div id="win-overlay" role="dialog" aria-label="Level complete">
         <h2 id="win-title">Level Cleared!</h2>
         <button id="win-btn" onclick="nextLevel()">Next Level</button>
     </div>
 
     <!-- Include Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="./vendor/three.min.js"></script>
+    <script src="./vendor/OrbitControls.js"></script>
 
     <script>
         // --- Core Variables ---
@@ -341,6 +349,9 @@
 
         // --- Interaction State ---
         let selectedBlock = null;
+        let activePointerId = null;
+        let soundMuted = false;
+        let renderingFailed = false;
         let initialGrabPoint = new THREE.Vector3();
         let pointerDownNDC = new THREE.Vector2();
         let startPos = new THREE.Vector3();
@@ -466,6 +477,91 @@
         let currentLevelIndex = 0;
         let highestUnlockedLevel = 0;
 
+        const SAVE_KEY = 'klotski-save-v1';
+        let restoredLayout = null;
+        let restoredWin = false;
+
+        function saveProgress() {
+            if (blocks.length !== LEVELS[currentLevelIndex].length) return;
+            const won = isGameWon || blocks.some(b => b.id === 'main' && b.ly >= 4);
+            try {
+                localStorage.setItem(SAVE_KEY, JSON.stringify({
+                    version: 1, current: currentLevelIndex, unlocked: highestUnlockedLevel,
+                    won, muted: soundMuted,
+                    positions: won ? null : blocks.map(b => ({ id: b.id, lx: b.lx, ly: b.ly }))
+                }));
+            } catch (_) { /* Storage may be unavailable in a private/embedded browser. */ }
+        }
+
+        function restoreProgress() {
+            try {
+                const v = JSON.parse(localStorage.getItem(SAVE_KEY));
+                if (!v || v.version !== 1 || !Number.isInteger(v.current) || !Number.isInteger(v.unlocked) ||
+                    v.current < 0 || v.current > v.unlocked || v.unlocked >= LEVELS.length ||
+                    typeof v.won !== 'boolean' || typeof v.muted !== 'boolean') return;
+                const level = LEVELS[v.current];
+                if (!v.won) {
+                    if (!Array.isArray(v.positions) || v.positions.length !== level.length) return;
+                    const used = new Set();
+                    for (const b of level) {
+                        const entries = v.positions.filter(p => p && p.id === b.id);
+                        if (entries.length !== 1) return;
+                        const p = entries[0];
+                        if (!Number.isInteger(p.lx) || !Number.isInteger(p.ly) || p.lx < 0 || p.ly < 0 || p.lx + b.w > GRID_W || p.ly + b.h > GRID_H) return;
+                        for (let y = p.ly; y < p.ly + b.h; y++) for (let x = p.lx; x < p.lx + b.w; x++) {
+                            const cell = y * GRID_W + x;
+                            if (used.has(cell)) return;
+                            used.add(cell);
+                        }
+                    }
+                    restoredLayout = v.positions;
+                }
+                currentLevelIndex = v.current;
+                highestUnlockedLevel = v.unlocked;
+                soundMuted = v.muted;
+                restoredWin = v.won;
+            } catch (_) { /* Invalid saves start a fresh game. */ }
+        }
+
+        function toggleSound() {
+            soundMuted = !soundMuted;
+            const button = document.getElementById('sound-btn');
+            button.textContent = soundMuted ? 'Sound: Off' : 'Sound: On';
+            button.setAttribute('aria-pressed', String(soundMuted));
+            if (soundMuted && slideGainNode) slideGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            saveProgress();
+        }
+
+        function cancelDrag() {
+            const id = activePointerId;
+            const b = selectedBlock;
+            selectedBlock = null;
+            activePointerId = null;
+            if (b) {
+                const pos = getWorldPos(b.lx, b.ly, b.w, b.h);
+                b.mesh.position.set(pos.x, 0.19, pos.z);
+            }
+            if (controls) controls.enabled = true;
+            document.body.style.cursor = 'default';
+            if (renderer && id !== null && renderer.domElement.hasPointerCapture(id)) renderer.domElement.releasePointerCapture(id);
+            if (slideGainNode) {
+                slideGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+                slideGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            }
+        }
+
+        function suspendGame() {
+            cancelDrag();
+            saveProgress();
+            if (audioCtx && audioCtx.state === 'running') audioCtx.suspend().catch(() => {});
+        }
+
+        function showGraphicsError() {
+            renderingFailed = true;
+            suspendGame();
+            document.getElementById('runtime-error').hidden = false;
+        }
+
         function updateLevelButtons() {
             document.getElementById('prev-level-btn').disabled = (currentLevelIndex === 0);
             document.getElementById('next-level-btn').disabled = (currentLevelIndex >= highestUnlockedLevel);
@@ -501,8 +597,19 @@
         };
 
         // --- Init ---
-        init();
-        animate();
+        restoreProgress();
+        try {
+            init();
+            document.getElementById('level-display').innerText = 'Level ' + (currentLevelIndex + 1);
+            updateLevelButtons();
+            document.getElementById('sound-btn').textContent = soundMuted ? 'Sound: Off' : 'Sound: On';
+            document.getElementById('sound-btn').setAttribute('aria-pressed', String(soundMuted));
+            if (restoredWin) checkWinCondition({ id: 'main', ly: 4 });
+            animate();
+        } catch (error) {
+            console.error(error);
+            showGraphicsError();
+        }
 
         function getStartupCameraDistance() {
             const width = window.innerWidth;
@@ -538,6 +645,8 @@
             const startupCameraDistance = getStartupCameraDistance();
             camera.position.set(0, startupCameraDistance.y, startupCameraDistance.z);
             camera.lookAt(0, 0, 0);
+            camera.zoom = Math.min(1, camera.aspect / 0.65);
+            camera.updateProjectionMatrix();
 
             // Renderer setup
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -586,8 +695,12 @@
             canvas.addEventListener('pointerdown', onPointerDown);
             canvas.addEventListener('pointermove', onPointerMove);
             canvas.addEventListener('pointerup', onPointerUp);
-            canvas.addEventListener('pointerleave', onPointerUp);
-            canvas.addEventListener('pointercancel', onPointerUp);
+            canvas.addEventListener('pointercancel', event => { if (event.pointerId === activePointerId) cancelDrag(); });
+            canvas.addEventListener('lostpointercapture', event => { if (event.pointerId === activePointerId) cancelDrag(); });
+            canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); showGraphicsError(); });
+            window.addEventListener('blur', suspendGame);
+            window.addEventListener('pagehide', suspendGame);
+            document.addEventListener('visibilitychange', () => { if (document.hidden) suspendGame(); });
         }
 
         function createBoard() {
@@ -667,12 +780,13 @@
         }
 
         function buildLevel() {
-            blocks.forEach(b => scene.remove(b.mesh));
+            blocks.forEach(b => { scene.remove(b.mesh); b.mesh.geometry.dispose(); });
             blocks = [];
             grid = Array.from({ length: GRID_H }, () => Array(GRID_W).fill(null));
 
             LEVELS[currentLevelIndex].forEach(data => {
-                const block = { ...data };
+                const saved = restoredLayout && restoredLayout.find(p => p.id === data.id);
+                const block = { ...data, ...(saved || {}) };
                 
                 const gap = 0.04;
                 const geo = new THREE.BoxGeometry(block.w - gap, 0.40, block.h - gap);
@@ -696,20 +810,23 @@
                     }
                 }
             });
+            restoredLayout = null;
         }
 
         function resetGame() {
+            cancelDrag();
             document.getElementById('win-overlay').classList.remove('active');
             isGameWon = false;
             selectedBlock = null;
             activeTweens = [];
             buildLevel();
+            saveProgress();
         }
 
         // --- Audio System ---
         function initAudio() {
             if (audioCtx) {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
                 return;
             }
             
@@ -746,7 +863,7 @@
         }
 
         function playSnapSound() {
-            if (!audioCtx) return;
+            if (!audioCtx || soundMuted || document.hidden) return;
             const t = audioCtx.currentTime;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -771,7 +888,7 @@
         function updateSlideVolume(velocity) {
             if (!slideGainNode) return;
             // Scale volume based on drag speed, clamp to a very low subtle max (0.015)
-            const targetVol = Math.min(velocity * 0.25, 0.015);
+            const targetVol = soundMuted || document.hidden ? 0 : Math.min(velocity * 0.25, 0.015);
             slideGainNode.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.05);
         }
 
@@ -787,7 +904,7 @@
         }
 
         function onPointerDown(event) {
-            if (isGameWon || selectedBlock) return;
+            if (isGameWon || selectedBlock || renderingFailed || event.isPrimary === false || event.button !== 0) return;
 
             initAudio(); // Required to unlock Web Audio API on user interaction
 
@@ -797,9 +914,8 @@
                 
                 if (activeTweens.some(t => t.block.mesh === mesh)) return;
 
-                if (event.pointerId) {
-                    renderer.domElement.setPointerCapture(event.pointerId);
-                }
+                activePointerId = event.pointerId;
+                renderer.domElement.setPointerCapture(activePointerId);
 
                 selectedBlock = mesh.userData.block;
                 
@@ -865,7 +981,7 @@
         }
 
         function onPointerMove(event) {
-            if (!selectedBlock) return;
+            if (!selectedBlock || event.pointerId !== activePointerId) return;
             event.preventDefault(); 
             getIntersects(event); // Updates raycaster
 
@@ -935,11 +1051,9 @@
         }
 
         function onPointerUp(event) {
-            if (!selectedBlock) return;
+            if (!selectedBlock || event.pointerId !== activePointerId) return;
 
-            if (event.pointerId) {
-                renderer.domElement.releasePointerCapture(event.pointerId);
-            }
+
 
             selectedBlock.mesh.position.y = 0.19;
             document.body.style.cursor = 'default';
@@ -975,8 +1089,12 @@
             const perfectPos = getWorldPos(selectedBlock.lx, selectedBlock.ly, selectedBlock.w, selectedBlock.h);
             snapBlock(selectedBlock, perfectPos.x, perfectPos.z);
 
+            const completedPointerId = activePointerId;
             selectedBlock = null;
-            controls.enabled = true; 
+            activePointerId = null;
+            controls.enabled = true;
+            if (renderer.domElement.hasPointerCapture(completedPointerId)) renderer.domElement.releasePointerCapture(completedPointerId);
+            saveProgress();
         }
 
         function snapBlock(block, tX, tZ) {
@@ -1020,6 +1138,7 @@
                 }
                 
                 document.getElementById('win-overlay').classList.add('active');
+                saveProgress();
             }
         }
 
@@ -1027,6 +1146,7 @@
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
+            camera.zoom = Math.min(1, camera.aspect / 0.65);
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
@@ -1034,7 +1154,8 @@
         function animate() {
             requestAnimationFrame(animate);
             
-            const delta = clock.getDelta();
+            const delta = Math.min(clock.getDelta(), 0.1);
+            if (document.hidden || renderingFailed) return;
             if (controls) controls.update(); 
 
             // Dynamically calculate movement speed for sliding audio

@@ -65,3 +65,9 @@ Google Play publishes new apps using Android App Bundles; APK is the installable
 ## Store-copy accuracy
 
 The live listing says “custom physics engine,” “flawless 1:1 dragging,” and a minimum of 81 moves. The inspected implementation uses grid constraints and tweening rather than a general physics engine. Absolute drag claims and minimum move counts are not substantiated by this audit. Revise such claims when preparing the listing; no live listing was edited in this audit.
+
+## Readiness-fix branch – 13 November 2026
+
+The initial findings above describe the synchronized live baseline. The branch `fix/klotski-android-readiness` addresses remote dependencies, save-state validation/persistence, pointer ownership, drag/lifecycle cleanup, geometry disposal, minimum touch target heights/labels, mute preference, resize zoom, and graphics error fallback. These fixes are not yet an Android or itch.io release.
+
+Current evidence: 27 automated state/input assertions pass with real Three.js math and a mock renderer/DOM. Original ten LEVELS data is preserved. Rendered Chromium replay and screenshot inspection remain pending; device checks remain pending. The sound control and narrower layout require rendered acceptance, and no keyboard block-movement feature is claimed. Full performance, accessibility, privacy/store declarations, rights review beyond bundled dependency notices, Android package identity/build/signing, and hardware acceptance remain unresolved.
