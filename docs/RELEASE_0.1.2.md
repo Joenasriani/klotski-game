@@ -3,7 +3,7 @@
 Package: com.joenasr.klotski. VersionCode: 3. Target API: 36.
 
 Preserves Joe’s accepted 0.1.1 audio restoration (slide 0.8/0.05, original snap). Adds final launcher PNG/adaptive artwork, an offline privacy dialog, and public policy:
-https://klotski-privacy-questrequest.joenasr.chatgpt.site
+https://joenasriani.github.io/klotski-game/privacy-policy.html
 
 Contact and developer account: questrequestvr@gmail.com. GitHub ownership does not determine Play Console ownership.
 
