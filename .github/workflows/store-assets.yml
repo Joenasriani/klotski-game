@@ -45,13 +45,17 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            gradle -p android :app:connectedDebugAndroidTest --no-daemon
+            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb install -r android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell am instrument -w -r com.joenasr.klotski.test/androidx.test.runner.AndroidJUnitRunner | tee instrumentation-result.txt
+            grep -q 'OK (1 test)' instrumentation-result.txt
             adb pull /sdcard/Android/data/com.joenasr.klotski/files/store-screens store-screens
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: klotski-store-android-evidence
           path: |
+            instrumentation-result.txt
             store-screens/
             android/app/build/outputs/apk/debug/app-debug.apk
             android/app/build/outputs/bundle/release/app-release.aab
