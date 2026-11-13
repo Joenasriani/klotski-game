@@ -7,6 +7,23 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
 
+        :root {
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --ui-pad-x: clamp(12px, 3.2vw, 32px);
+            --ui-pad-y: clamp(10px, 2.4vh, 24px);
+            --ui-gap: clamp(6px, 1.4vw, 14px);
+            --title-size: clamp(18px, 2.7vw, 30px);
+            --level-size: clamp(12px, 1.9vw, 16px);
+            --button-font-size: clamp(11px, 1.7vw, 14px);
+            --button-pad-y: clamp(7px, 1.5vh, 11px);
+            --button-pad-x: clamp(10px, 2.4vw, 20px);
+            --button-radius: clamp(7px, 1vw, 10px);
+            --instructions-size: clamp(12px, 1.8vw, 15px);
+        }
+
         body, html {
             margin: 0;
             padding: 0;
@@ -18,19 +35,26 @@
             touch-action: none; /* Prevents pull-to-refresh and scrolling on mobile */
         }
 
+        body {
+            min-width: 320px;
+        }
+
         #canvas-container {
             width: 100%;
             height: 100%;
             display: block;
         }
 
+        #canvas-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
         /* UI Elements */
         #ui-layer {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             pointer-events: none;
             display: flex;
             flex-direction: column;
@@ -39,21 +63,47 @@
         }
 
         header {
-            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: calc(var(--ui-pad-y) + var(--safe-top)) calc(var(--ui-pad-x) + var(--safe-right)) var(--ui-pad-y) calc(var(--ui-pad-x) + var(--safe-left));
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: var(--ui-gap);
             pointer-events: auto;
         }
 
         h1 {
             margin: 0;
             color: #fff;
-            font-size: 24px;
+            font-size: var(--title-size);
             font-weight: 800;
+            line-height: 1;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: clamp(1px, 0.28vw, 2px);
             text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            white-space: nowrap;
+            flex: 0 1 auto;
+        }
+
+        .level-controls {
+            display: flex;
+            gap: var(--ui-gap);
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: nowrap;
+            min-width: 0;
+        }
+
+        #level-display {
+            color: white;
+            font-weight: 800;
+            font-size: var(--level-size);
+            line-height: 1;
+            margin: 0 clamp(2px, 0.8vw, 6px);
+            text-transform: uppercase;
+            letter-spacing: clamp(0.5px, 0.18vw, 1px);
+            white-space: nowrap;
         }
 
         button {
@@ -61,16 +111,30 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(10px);
             color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
+            min-height: 38px;
+            padding: var(--button-pad-y) var(--button-pad-x);
+            border-radius: var(--button-radius);
             font-family: 'Poppins', sans-serif;
             font-weight: 600;
-            font-size: 14px;
+            font-size: var(--button-font-size);
+            line-height: 1;
             cursor: pointer;
             transition: all 0.2s ease;
             pointer-events: auto;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: clamp(0.4px, 0.14vw, 1px);
+            white-space: nowrap;
+        }
+
+        .level-nav-btn {
+            width: clamp(34px, 8vw, 44px);
+            min-width: clamp(34px, 8vw, 44px);
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        #restart-btn {
+            margin-left: clamp(2px, 1vw, 10px);
         }
 
         button:hover {
@@ -91,31 +155,37 @@
         }
 
         #instructions {
+            box-sizing: border-box;
+            width: 100%;
             text-align: center;
             color: rgba(255, 255, 255, 0.7);
-            padding-bottom: 30px;
-            font-size: 14px;
+            padding: 0 calc(var(--ui-pad-x) + var(--safe-right)) calc(var(--ui-pad-y) + var(--safe-bottom)) calc(var(--ui-pad-x) + var(--safe-left));
+            font-size: var(--instructions-size);
+            line-height: 1.35;
             font-weight: 400;
+            pointer-events: none;
+            text-wrap: balance;
         }
 
         /* Win Overlay */
         #win-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
+            box-sizing: border-box;
+            padding: calc(24px + var(--safe-top)) calc(20px + var(--safe-right)) calc(24px + var(--safe-bottom)) calc(20px + var(--safe-left));
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(5px);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: clamp(16px, 3vw, 24px);
             opacity: 0;
             visibility: hidden; /* Added to completely remove interaction when hidden */
             pointer-events: none;
             transition: opacity 0.5s ease, visibility 0.5s;
             z-index: 20;
+            text-align: center;
         }
 
         #win-overlay.active {
@@ -132,15 +202,99 @@
 
         #win-overlay h2 {
             color: #ef4444;
-            font-size: 48px;
-            margin: 0 0 20px 0;
+            font-size: clamp(32px, 8vw, 58px);
+            line-height: 1.05;
+            margin: 0;
             text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+            text-wrap: balance;
         }
 
-        @media (max-width: 600px) {
-            h1 { font-size: 20px; }
-            button { padding: 8px 16px; font-size: 12px; }
-            #win-overlay h2 { font-size: 36px; }
+        @media (max-width: 520px) and (orientation: portrait) {
+            header {
+                align-items: center;
+                flex-direction: row;
+            }
+
+            .level-controls {
+                width: auto;
+                justify-content: flex-end;
+                gap: clamp(5px, 1.6vw, 8px);
+            }
+
+            #restart-btn {
+                margin-left: clamp(2px, 1vw, 6px);
+            }
+        }
+
+        @media (max-width: 520px) and (orientation: landscape) {
+            header {
+                align-items: center;
+                flex-direction: row;
+            }
+
+            .level-controls {
+                width: auto;
+                justify-content: flex-end;
+            }
+
+            #restart-btn {
+                margin-left: clamp(2px, 1vw, 10px);
+            }
+        }
+
+        @media (max-width: 380px) {
+            .level-controls {
+                gap: 5px;
+            }
+
+            #level-display {
+                font-size: 11px;
+            }
+
+            button {
+                min-height: 34px;
+                font-size: 10px;
+            }
+
+            #restart-btn {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            :root {
+                --ui-pad-y: clamp(6px, 2vh, 12px);
+                --ui-pad-x: clamp(10px, 2.2vw, 22px);
+                --title-size: clamp(15px, 3.2vh, 22px);
+                --level-size: clamp(10px, 2.4vh, 14px);
+                --button-font-size: clamp(10px, 2.2vh, 12px);
+                --button-pad-y: 6px;
+                --button-pad-x: clamp(8px, 1.7vw, 14px);
+                --instructions-size: clamp(10px, 2.3vh, 13px);
+            }
+
+            button {
+                min-height: 32px;
+            }
+
+            #instructions {
+                max-width: 70vw;
+                align-self: center;
+                padding-bottom: calc(6px + var(--safe-bottom));
+            }
+        }
+
+        @media (min-width: 900px) {
+            header {
+                padding-top: calc(clamp(18px, 2.2vh, 28px) + var(--safe-top));
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .level-controls {
+                gap: 14px;
+            }
         }
     </style>
 </head>
@@ -151,11 +305,11 @@
     <div id="ui-layer">
         <header>
             <h1>Klotski</h1>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <button id="prev-level-btn" onclick="changeLevel(-1)" style="padding: 10px 15px;" disabled>◀</button>
-                <span id="level-display" style="color:white; font-weight:800; font-size: 16px; margin: 0 5px; text-transform: uppercase; letter-spacing: 1px;">Level 1</span>
-                <button id="next-level-btn" onclick="changeLevel(1)" style="padding: 10px 15px;" disabled>▶</button>
-                <button onclick="resetGame()" style="margin-left: 10px;">Restart</button>
+            <div class="level-controls">
+                <button id="prev-level-btn" class="level-nav-btn" onclick="changeLevel(-1)" disabled>◀</button>
+                <span id="level-display">Level 1</span>
+                <button id="next-level-btn" class="level-nav-btn" onclick="changeLevel(1)" disabled>▶</button>
+                <button id="restart-btn" onclick="resetGame()">Restart</button>
             </div>
         </header>
         <div id="instructions">
@@ -350,6 +504,27 @@
         init();
         animate();
 
+        function getStartupCameraDistance() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const isPortrait = height > width;
+            const isSmallScreen = Math.min(width, height) <= 640;
+
+            if (isPortrait && isSmallScreen) {
+                return { y: 9.4, z: 8.4 };
+            }
+
+            if (isPortrait) {
+                return { y: 8.9, z: 7.9 };
+            }
+
+            if (isSmallScreen) {
+                return { y: 8.6, z: 7.6 };
+            }
+
+            return { y: 8, z: 7 };
+        }
+
         function init() {
             const container = document.getElementById('canvas-container');
 
@@ -360,7 +535,8 @@
 
             // Camera setup
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.set(0, 8, 7);
+            const startupCameraDistance = getStartupCameraDistance();
+            camera.position.set(0, startupCameraDistance.y, startupCameraDistance.z);
             camera.lookAt(0, 0, 0);
 
             // Renderer setup
@@ -425,33 +601,49 @@
             trayGroup.add(base);
 
             // Walls (Left, Right, Top)
-            const wallGeoVert = new THREE.BoxGeometry(0.2, 0.4, 5.4);
-            const wallGeoHorz = new THREE.BoxGeometry(4.4, 0.4, 0.2);
+            // Wall pieces are sized to meet without overlapping at outside corners, preventing corner z-fighting.
+            const wallGeoVert = new THREE.BoxGeometry(0.2, 0.4, 4.96);
+            const wallGeoHorz = new THREE.BoxGeometry(3.96, 0.4, 0.2);
             
             const wallLeft = new THREE.Mesh(wallGeoVert, materials.boardWall);
-            wallLeft.position.set(-2.1, 0.1, 0);
+            wallLeft.position.set(-2.085, 0.1, 0); // Tiny inward offset prevents edge z-fighting with the board base.
             wallLeft.castShadow = true; wallLeft.receiveShadow = true;
             trayGroup.add(wallLeft);
 
             const wallRight = new THREE.Mesh(wallGeoVert, materials.boardWall);
-            wallRight.position.set(2.1, 0.1, 0);
+            wallRight.position.set(2.085, 0.1, 0); // Tiny inward offset prevents edge z-fighting with the board base.
             wallRight.castShadow = true; wallRight.receiveShadow = true;
             trayGroup.add(wallRight);
 
             const wallTop = new THREE.Mesh(wallGeoHorz, materials.boardWall);
-            wallTop.position.set(0, 0.1, -2.6);
+            wallTop.position.set(0, 0.1, -2.585); // Tiny inward offset prevents edge z-fighting with the board base.
             wallTop.castShadow = true; wallTop.receiveShadow = true;
             trayGroup.add(wallTop);
 
+            // Visible corner posts restore the full board corners while keeping each piece from overlapping coplanar faces.
+            const cornerGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
+            const cornerPositions = [
+                [-2.085, 0.1, -2.585],
+                [2.085, 0.1, -2.585],
+                [-2.085, 0.1, 2.585],
+                [2.085, 0.1, 2.585]
+            ];
+            cornerPositions.forEach(([x, y, z]) => {
+                const corner = new THREE.Mesh(cornerGeo, materials.boardWall);
+                corner.position.set(x, y, z);
+                corner.castShadow = true; corner.receiveShadow = true;
+                trayGroup.add(corner);
+            });
+
             // Bottom walls (leaving center 2-unit gap)
-            const bottomWallGeo = new THREE.BoxGeometry(1.2, 0.4, 0.2);
+            const bottomWallGeo = new THREE.BoxGeometry(0.98, 0.4, 0.2);
             const wallBotL = new THREE.Mesh(bottomWallGeo, materials.boardWall);
-            wallBotL.position.set(-1.6, 0.1, 2.6);
+            wallBotL.position.set(-1.49, 0.1, 2.585); // Tiny inward offset prevents edge z-fighting with the board base.
             wallBotL.castShadow = true; wallBotL.receiveShadow = true;
             trayGroup.add(wallBotL);
 
             const wallBotR = new THREE.Mesh(bottomWallGeo, materials.boardWall);
-            wallBotR.position.set(1.6, 0.1, 2.6);
+            wallBotR.position.set(1.49, 0.1, 2.585); // Tiny inward offset prevents edge z-fighting with the board base.
             wallBotR.castShadow = true; wallBotR.receiveShadow = true;
             trayGroup.add(wallBotR);
 
@@ -578,8 +770,8 @@
 
         function updateSlideVolume(velocity) {
             if (!slideGainNode) return;
-            // Scale volume based on drag speed, clamp to a very low subtle max (0.05)
-            const targetVol = Math.min(velocity * 0.8, 0.05); 
+            // Scale volume based on drag speed, clamp to a very low subtle max (0.015)
+            const targetVol = Math.min(velocity * 0.25, 0.015);
             slideGainNode.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.05);
         }
 
@@ -861,12 +1053,8 @@
                 if (t.progress >= 1) {
                     t.block.mesh.position.x = t.targetX;
                     t.block.mesh.position.z = t.targetZ;
-                    if(t.onComplete) {
-                        t.onComplete();
-                    } else {
-                        playSnapSound(); // Play woody thock on snapping to grid
-                        checkWinCondition(t.block);
-                    }
+                    playSnapSound(); // Play woody thock on snapping to grid
+                    checkWinCondition(t.block);
                     activeTweens.splice(i, 1);
                 } else {
                     const ease = 1 - (1 - t.progress) * (1 - t.progress);
