@@ -79,3 +79,8 @@ Build/lint and package-content inspection are complete. Lint has zero errors and
 CI reuses green browser run 43409193383 only when index.html, vendor/, tests/, package.json, and package-lock.json exactly match verified commit 1275fb8; changed web/QA files trigger a new full replay. This is historical evidence reuse, not a claim that every native-only commit replayed the browser.
 
 Next: obtain Joe’s physical-device test results for the debug APK. Test airplane-mode launch, touch/multi-touch, cutouts/rotation, Back, background/resume/audio, process death/restoration, graphics recovery, sustained performance, and completion. Final store assets, policy/declarations, release signing, and Play testing remain open. Update itch.io only with the verified web release at the roadmap's release stage. Do not start Ascension.
+
+
+## Android audio correction – 13 November 2026
+
+Joe reported low sliding audio on the physical Android test. History comparison identified the live-source sync (960dcf6) reduced the original slide multiplier/cap from 0.8/0.05 to 0.25/0.015. Version 0.1.1 (versionCode 2) restores 0.8/0.05 while preserving mute/background guards and the original 400 Hz filter and snap effect. The earlier local proposal to redesign/amplify the snap was rejected in favor of this minimal restoration and was never pushed. `node tests/audio.cjs` uses real OfflineAudioContext renders to compare against the quieter APK baseline: stronger slide, bit-identical snap, combined headroom, mute/rest silence. Check current CI before delivering the rebuilt APK. Final listening acceptance remains with Joe on Android. Previous store screenshots remain visually representative; old runtime/build checksums describe 0.1.0 only.

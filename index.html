@@ -887,8 +887,8 @@
 
         function updateSlideVolume(velocity) {
             if (!slideGainNode) return;
-            // Scale volume based on drag speed, clamp to a very low subtle max (0.015)
-            const targetVol = soundMuted || document.hidden ? 0 : Math.min(velocity * 0.25, 0.015);
+            // Scale volume based on drag speed, restore the original 0.05 cap
+            const targetVol = soundMuted || document.hidden ? 0 : Math.min(velocity * 0.8, 0.05);
             slideGainNode.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.05);
         }
 
