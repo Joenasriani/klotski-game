@@ -1,0 +1,6 @@
+{
+  "name": "klotski-readiness-qa",
+  "private": true,
+  "scripts": {"test:state": "node tests/state.cjs", "test:browser": "python3 tests/solve.py /tmp/klotski-solutions.json && node tests/browser.cjs"},
+  "devDependencies": {"playwright": "1.56.1"}
+}

@@ -1,0 +1,26 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.joenasr.klotski'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'com.joenasr.klotski'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '0.1.0'
+    }
+    buildFeatures { buildConfig true }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/webAssets')
+    buildTypes { release { minifyEnabled false } }
+}
+dependencies {
+    implementation 'androidx.webkit:webkit:1.14.0'
+    implementation 'androidx.activity:activity:1.10.1'
+}
+// Package only the game and licensed runtime assets, never repository/tests/docs.
+tasks.register('syncWebAssets', Sync) {
+    from(rootProject.projectDir.parentFile) { include 'index.html'; include 'vendor/**' }
+    into(layout.buildDirectory.dir('generated/webAssets/www'))
+}
+tasks.named('preBuild').configure { dependsOn 'syncWebAssets' }

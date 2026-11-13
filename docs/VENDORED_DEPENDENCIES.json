@@ -1,0 +1,53 @@
+{
+  "date": "2026-11-13",
+  "three_version": "0.128.0",
+  "three_source": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js",
+  "orbit_source": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js",
+  "font_source": "https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap",
+  "license_files": [
+    "vendor/THREE-LICENSE.txt",
+    "vendor/Poppins-OFL.txt"
+  ],
+  "files": [
+    {
+      "path": "vendor/OrbitControls.js",
+      "bytes": 26375,
+      "sha256": "02bb4ade710f3e607329e37a21f098bc3ac70eb6e33daf8a65e79f4db785e7b2"
+    },
+    {
+      "path": "vendor/Poppins-OFL.txt",
+      "bytes": 4385,
+      "sha256": "6be04893d770899a015649c7aa3b582f871b272f8747a92b78b17c3e5c8b2573"
+    },
+    {
+      "path": "vendor/THREE-LICENSE.txt",
+      "bytes": 1081,
+      "sha256": "7dddf7c5b8fd10ee654db8857d75d104b5557889aa5a91fc4ca545ea7c07062f"
+    },
+    {
+      "path": "vendor/poppins-0.ttf",
+      "bytes": 154628,
+      "sha256": "cdedb1729acac414ed01744a11da7badb86adf13108e7bd3fa161b9323f7fe54"
+    },
+    {
+      "path": "vendor/poppins-1.ttf",
+      "bytes": 151516,
+      "sha256": "dae40ca7b35fe7501bda2e4140a6860b1db47330be5d3c8ab6971fd83a70e9a5"
+    },
+    {
+      "path": "vendor/poppins-2.ttf",
+      "bytes": 149072,
+      "sha256": "5e8a5c3c2a56c3bc1b135645ca9637b9b64dc3fed5fbf85cb5ed144e06bb6d48"
+    },
+    {
+      "path": "vendor/poppins.css",
+      "bytes": 459,
+      "sha256": "48446b48c1384dc14f9c35f6eee1b7a56ef12220df0b4d6cf74643730bcf74dc"
+    },
+    {
+      "path": "vendor/three.min.js",
+      "bytes": 603445,
+      "sha256": "9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2"
+    }
+  ]
+}
