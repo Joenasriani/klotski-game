@@ -52,7 +52,7 @@ const launch={headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swi
    assert(!result.clip,`Clipped initial board at ${width}x${height}`);
    await page.screenshot({path:`qa-results/${width}x${height}.png`});
   }
-  await page.locator('#sound-btn').click();await page.reload();assert.equal(await page.locator('#sound-btn').innerText(),'Sound: Off');
+  await page.locator('#sound-btn').click();await page.reload();assert.equal(await page.locator('#sound-btn').innerText(),'SOUND: OFF');
   assert.deepEqual(errors,[]);assert.deepEqual(remote,[]);
   await context.close();
   // Failed graphics initialization must show a useful recovery screen.
