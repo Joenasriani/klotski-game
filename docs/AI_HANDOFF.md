@@ -8,7 +8,7 @@ Joe accepted the restored 0.1.1 sound on his Android. Preserve slide `Math.min(v
 
 ## Current app and artifacts
 
-0.1.2/code 3, package com.joenasr.klotski; min API 26, compile/target 36. App source commit 6e09da68ab71126a0d2a3635bb2585605d6d88bf. Final raster/adaptive launcher integrated. Offline Privacy button/dialog and Android Back handling added. Privacy policy is public at https://klotski-privacy-questrequest.joenasr.chatgpt.site and contact is questrequestvr@gmail.com.
+0.1.2/code 3, package com.joenasr.klotski; min API 26, compile/target 36. App source commit 6e09da68ab71126a0d2a3635bb2585605d6d88bf. Final raster/adaptive launcher integrated. Offline Privacy button/dialog and Android Back handling added. Privacy policy is public at https://joenasriani.github.io/klotski-game/privacy-policy.html and contact is questrequestvr@gmail.com.
 
 Signed AAB and release-derived install-test APK are in the user's KLOTSKI Drive folder, subfolder 08 – Play Store Submission – v0.1.2. Private upload key/password backup is in subfolder 07 – Signing Key – PRIVATE – Do Not Share. No private key is in GitHub or Actions. Public upload certificate SHA256: A3:F3:9E:76:13:70:FC:91:EF:91:12:D0:D8:57:A8:A7:35:BA:54:3F:2F:C8:A1:4E:85:C4:AB:87:3E:44:6E:65. Generated for a new app; verify compatibility before use if Console already has a registered upload key. Google-managed Play App Signing enrollment remains pending.
 
