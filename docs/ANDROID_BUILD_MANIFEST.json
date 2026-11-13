@@ -1,0 +1,22 @@
+{
+  "source_commit": "83bc4d93149c7d60816cefdbe9ee89eefbb9dc4f",
+  "workflow_run": 43412776822,
+  "runtime_sha256": "1b3ac7f52dbe9c6820fecfd1275eee259ba027d877be6f381d2649c72067aeb2",
+  "files": [
+    {
+      "name": "Klotski-debug.apk",
+      "bytes": 2661601,
+      "sha256": "4006906eb473506f6deb622faa22997d8dffa8f1f6cc9979c2684de8f0bb8ab3"
+    },
+    {
+      "name": "Klotski-UNSIGNED.aab",
+      "bytes": 2054263,
+      "sha256": "4e174a3f7453b34e731aa2f52158e933f7a7611079e1a71de112a8934832e170"
+    },
+    {
+      "name": "lint-results-debug.html",
+      "bytes": 64899,
+      "sha256": "ef03611efe3caf806436cbf18299900f61dcd70b1a9c734d702de6bed38b1b16"
+    }
+  ]
+}

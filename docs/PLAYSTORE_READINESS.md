@@ -1,12 +1,12 @@
 # Klotski – pre-Android readiness audit
 
-Audit date: 13 November 2026. Verdict: **BLOCKED – do not package as release-ready yet.**
+Audit date: 13 November 2026. Current status: **browser verification and Android preparation build passed; physical-device and production release acceptance pending.** The baseline findings below are retained as historical evidence, not a claim that every issue remains open.
 
 ## Source parity
 
 Historical GitHub main at fd25d4c did not match the published itch.io build. Current `main` was reconciled in commit `960dcf646f7cd4d9bba1e51b5af991797acd6276`; index.html matches the observed live response, excluding itch.io's injected host script (and normalizing one changed line’s trailing whitespace). Differences include responsive UI and safe-area CSS, startup camera distance, tray wall/corner geometry, reduced sliding volume, and simplified tween completion. No puzzle layout changes were found. README and AI handoff were absent from the historical baseline; both now exist on main. The live response was rechecked on the same date and its hash was unchanged.
 
-## Findings
+## Baseline findings (historical, before readiness fixes)
 
 | Priority | Finding / evidence | Required action |
 | --- | --- | --- |
@@ -29,7 +29,7 @@ These are static findings unless explicitly described as observed at runtime. Mu
 
 All ten layouts have non-overlapping starting positions and were solvable in a breadth-first grid search with same-size pieces canonicalized. Search used legal horizontal/vertical slides without crossing occupied cells and checked that the red block can reach x=1, y=3 before its exit slide. This verifies a solution exists in the abstract model. It does not prove rendered dragging, snapping, win detection, or progression works. No shortest-move marketing claim is approved by this test.
 
-## Verification ledger
+## Baseline verification ledger (historical)
 
 | Check | Result |
 | --- | --- |
@@ -73,3 +73,14 @@ The initial findings above describe the synchronized live baseline. The branch `
 Current evidence: 27 automated state/input assertions pass with real Three.js math and a mock renderer/DOM. Original ten LEVELS data is preserved. Rendered Chromium replay and screenshot inspection remain pending; device checks remain pending. The sound control and narrower layout require rendered acceptance, and no keyboard block-movement feature is claimed. Full performance, accessibility, privacy/store declarations, rights review beyond bundled dependency notices, Android package identity/build/signing, and hardware acceptance remain unresolved.
 
 Android preparation source now exists on the fix branch; see ANDROID_PREPARATION.md. It packages local web assets through WebViewAssetLoader with no INTERNET permission. CI is configured to produce a debug-signed APK and unsigned AAB after the browser gate. Build success and hardware acceptance are not yet claimed. The original P0 "no project" finding describes the historical baseline; signing and release/device readiness remain open.
+
+## Current resolution – final preparation build
+
+- Browser checks passed: 27 state/input assertions; actual Chromium touch; rendered mouse solutions through all ten levels; saved win/mute; external-host blocking; graphics fallback; sampled desktop/phone/tablet bounds and screenshots.
+- Android debug APK, unsigned release AAB, and lint passed in run 43412776822 from source commit 83bc4d93149c7d60816cefdbe9ee89eefbb9dc4f.
+- Package inspection confirmed the exact verified HTML/vendor bytes, no INTERNET permission in the APK manifest, APK signing-block presence, unsigned AAB, native notices, and exclusion of tests/node_modules from game assets.
+- Lint: zero errors, four non-blocking warnings. API 36 is below the newest SDK; an API-33 Back attribute is ignored on older devices with dispatcher fallback; two pinned AndroidX dependencies have newer versions available. See the handoff and retained lint report.
+- Physical-device touch/multi-touch, lifecycle/audio, offline install/launch, process restoration, graphics recovery, sustained performance, final store assets/declarations, production signing, and store/account acceptance remain open. The launcher vector remains provisional.
+- itch.io is unchanged. Do not describe the debug APK or unsigned AAB as a Play Store-ready release.
+
+Evidence: https://github.com/Joenasriani/klotski-game/actions/runs/43409193383 (browser) and https://github.com/Joenasriani/klotski-game/actions/runs/43412776822 (Android preparation). Artifact hashes: ANDROID_BUILD_MANIFEST.json.
