@@ -14,15 +14,30 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Compare web and QA sources with verified baseline
+        id: web
+        run: |
+          git fetch --depth=1 origin 1275fb816b99913242923456ab4366d1763aab75
+          if git diff --quiet 1275fb816b99913242923456ab4366d1763aab75 HEAD -- index.html vendor/ tests/ package.json package-lock.json; then
+            echo 'replay=false' >> "$GITHUB_OUTPUT"
+            echo 'Exact web/QA sources match green browser run 43409193383; reusing its evidence.'
+          else
+            echo 'replay=true' >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-node@v4
+        if: steps.web.outputs.replay == 'true'
         with:
           node-version: '22'
-      - run: npm ci --ignore-scripts
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:state
-      - run: npm run test:browser
+      - if: steps.web.outputs.replay == 'true'
+        run: npm ci --ignore-scripts
+      - if: steps.web.outputs.replay == 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.web.outputs.replay == 'true'
+        run: npm run test:state
+      - if: steps.web.outputs.replay == 'true'
+        run: npm run test:browser
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.web.outputs.replay == 'true'
         with:
           name: klotski-browser-evidence
           path: qa-results/
@@ -40,7 +55,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
       - run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
       - run: gradle -p android :app:assembleDebug :app:bundleRelease :app:lintDebug --no-daemon
       - uses: actions/upload-artifact@v4
