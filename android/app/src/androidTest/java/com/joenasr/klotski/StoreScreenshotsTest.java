@@ -14,6 +14,8 @@ import android.view.ViewGroup;
 import android.webkit.WebView;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry;
+import androidx.test.runner.lifecycle.Stage;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.json.JSONArray;
@@ -64,12 +66,21 @@ public final class StoreScreenshotsTest {
         instrumentation.runOnMainSync(()->{int[] xy=new int[2];web.getLocationInWindow(xy);rect.set(xy[0],xy[1],xy[0]+web.getWidth(),xy[1]+web.getHeight());});
         return rect;
     }
+    private void currentActivity() {
+        instrumentation.runOnMainSync(()->{
+            for(android.app.Activity resumed:ActivityLifecycleMonitorRegistry.getInstance().getActivitiesInStage(Stage.RESUMED)) {
+                if(resumed instanceof MainActivity) {activity=(MainActivity)resumed;web=findWeb(activity.getWindow().getDecorView());}
+            }
+        });
+    }
     private void viewport(int width,int height,int density) throws Exception {
         shell("wm density "+density);
+        SystemClock.sleep(2000);currentActivity();
         int displayHeight=height;
         for(int tries=0;tries<5;tries++) {
             shell("wm size "+width+"x"+displayHeight);
             SystemClock.sleep(2000);
+            currentActivity();
             Rect actual=bounds();
             if(actual.width()==width&&actual.height()==height)return;
             displayHeight+=height-actual.height();
