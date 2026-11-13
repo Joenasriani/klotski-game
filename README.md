@@ -1,79 +1,46 @@
-# Klotski – 3D Klotski Puzzle
+# Klotski – 3D Sliding-Block Puzzle
 
-A 3D sliding-block puzzle by Joe Nasr. Move pieces through a 4 × 5 tray to free the large red 2 × 2 block through the bottom-center exit. Ten layouts progress from a short introduction to classic Hua Rong Dao.
+A ten-level sliding-block puzzle by Joe Nasr. Move pieces around a 4 × 5 tray to guide the large red block through the bottom-center exit.
 
-[Play the published browser game](https://joenasr.itch.io/klotski)
+[Published browser game](https://joenasr.itch.io/klotski) · [Privacy policy](https://klotski-privacy-questrequest.joenasr.chatgpt.site)
 
-## Current state
+## Current Android candidate: 0.1.2 / versionCode 3
 
-The repository was synchronized with the observed itch.io source on 13 November 2026. This development build includes local runtime assets/fonts, saved progress, safer touch/drag cleanup, mute, larger controls, responsive framing, and a graphics-error recovery screen. These changes are not yet uploaded to itch.io.
+- Application ID: `com.joenasr.klotski`; min API 26; compile/target API 36.
+- Developer account/contact: `questrequestvr@gmail.com`. GitHub repository ownership does not determine the Play developer account.
+- Final launcher artwork is integrated for legacy and adaptive icons.
+- Privacy text is available offline inside the app; Android Back closes that dialog before backgrounding.
+- Local assets, local saves, mute, no INTERNET permission, no login, ads or purchases in this build.
+- Audio preserves the original slide multiplier/cap 0.8/0.05 and original snap. Joe accepted the restored sound on Android in 0.1.1. Do not reduce or redesign it without a new requirement.
 
-**Browser verification passed. Android / Play Store release acceptance remains open.** The preparation project is not a production-signed store release. See [the locked roadmap](docs/ROADMAP.md), [current AI handoff](docs/AI_HANDOFF.md), [readiness audit](docs/PLAYSTORE_READINESS.md), and [Android build notes](docs/ANDROID_PREPARATION.md).
+A dedicated RSA-3072 upload key was generated and backed up privately in the specified Drive account, outside GitHub and CI. The 0.1.2 release AAB was signed locally, verified against its certificate, and validated with Google bundletool 1.18.3. An installation APK was generated from that bundle. These are submission materials, not proof of Play acceptance. Never commit private signing credentials.
 
-**Current focus: Klotski only.** Ascension and Paradigm Shift remain queued.
+## Verification and release limits
 
-## Controls
+Readiness workflow [43442951226](https://github.com/Joenasriani/klotski-game/actions/runs/43442951226) passed the full ten-level rendered browser replay, touch, save/mute/restoration, responsive bounds, offline-policy open/close, graphics fallback, Android build and lint. App source: `6e09da68ab71126a0d2a3635bb2585605d6d88bf`.
 
-- Drag a block along an available row or column; release to snap to the grid.
-- Drag the background/tray to orbit; scroll or pinch to zoom.
-- Restart resets the current layout. Arrows revisit unlocked levels.
-- Clear a layout to unlock the next; final completion offers Play Again.
-- Sound toggles synthesized audio. Progress, current block positions, and sound preference save locally when browser storage is available. Clearing browser/app data removes them.
+Android emulator instrumentation passed 1/1 in capture run 43442951243, but its screenshot pull failed after test-runner teardown. Workflow-only commit `31d6785cf35504e22d8c13f3cc331ae3baecb1f8` runs instrumentation directly to preserve output; capture run [43444307410](https://github.com/Joenasriani/klotski-game/actions/runs/43444307410) passed and exported all 12 actual Android app screenshots. Three 7-class captures reflect an 18-pixel system-inset reflow; actual dimensions are recorded without stretching. This does not change the app binary or audio.
 
-## Run locally
+**Play Console setup remains open:** browser access was blocked in this session. Account verification/testing, signing enrollment, listing, declarations, issued content rating, intended audience, pricing/countries, selected video acceptance, pre-launch reports and Google review are not completed or inferred from these tests. Full physical-device regression for 0.1.2 is pending; Joe's specific 0.1.1 sound acceptance is recorded separately.
 
-No build or package installation is needed to play:
+## Play locally and verify
 
-```sh
-python3 -m http.server 8000
-```
+Serve the repository with `python3 -m http.server 8000`. Runtime dependencies/fonts are bundled. Browser hosting has no PWA cache, so do not promise an uncached offline itch.io launch.
 
-Open http://localhost:8000 in a WebGL-capable browser. Three.js r128, OrbitControls r128, and Poppins are bundled in `vendor/` with upstream notices. The browser build has no PWA offline cache; local dependencies do not guarantee an uncached offline first visit to itch.io.
-
-## Verification
-
-Development-only QA:
+Development checks:
 
 ```sh
 npm ci --ignore-scripts
 npx playwright install --with-deps chromium
 npm run test:state
+node tests/audio.cjs
 npm run test:browser
 ```
 
-| Check | Evidence |
-| --- | --- |
-| Syntax and original ten layouts | Passed; level definitions unchanged |
-| State, raycast, storage, pointer cleanup, graphics fallback | 27 assertions passed using real Three.js math and adapted DOM/renderer |
-| Rendered gameplay | All ten levels completed through Chromium mouse dragging |
-| Touch, restoration, restart, saved win/mute | Passed in Chromium |
-| Responsive samples | Screenshots/bounds inspected at desktop, phone portrait/landscape, narrow phone, tablet |
-| External-host blocking and graphics-error screen | Passed |
-| Android hardware, performance, and store acceptance | Pending |
+Drag blocks to slide; drag background to orbit; pinch/scroll to zoom. Restart resets the current puzzle. Clear a level to unlock the next; arrows revisit unlocked levels. Progress, positions and sound preference save locally; clearing app data removes them.
 
-[Green browser workflow](https://github.com/Joenasriani/klotski-game/actions/runs/43409193383). Browser/software-rendering evidence is not physical Android testing.
+## Continuation
 
-## Repository map
+[Current AI handoff](docs/AI_HANDOFF.md), [0.1.2 release record](docs/RELEASE_0.1.2.md), [audit history](docs/PLAYSTORE_READINESS.md), and [locked roadmap](docs/ROADMAP.md).
 
-| Path | Purpose |
-| --- | --- |
-| `index.html` | Game code, ten layouts, UI, rendering, input, sound, saves |
-| `vendor/` | Pinned runtime/font assets and upstream notices |
-| `android/` | Offline local-asset WebView preparation project |
-| `tests/` | State tests, solution generation, rendered browser replay |
-| `docs/AI_HANDOFF.md` | Single current technical handoff |
-| `docs/ROADMAP.md` | Locked scope and sequence |
-| `docs/PLAYSTORE_READINESS.md` | Audit, findings, and resolution evidence |
-| `docs/ANDROID_PREPARATION.md` | Build instructions and Android acceptance limits |
-
-The Android workflow passed and generated a debug test APK and an unsigned release AAB. [Android build evidence](https://github.com/Joenasriani/klotski-game/actions/runs/43412776822) and [artifact checksums](docs/ANDROID_BUILD_MANIFEST.json) identify the tested build. Lint completed with zero errors and four non-blocking warnings, recorded in the handoff. Production signing, actual Play identity, final store assets/declarations, and device acceptance remain open. The proposed launcher graphic is provisional.
-
-
-## Android audio correction – 13 November 2026
-
-Joe reported low sliding audio on the physical Android test. History comparison identified the live-source sync (960dcf6) reduced the original slide multiplier/cap from 0.8/0.05 to 0.25/0.015. Version 0.1.1 (versionCode 2) restores 0.8/0.05 while preserving mute/background guards and the original 400 Hz filter and snap effect. The earlier local proposal to redesign/amplify the snap was rejected in favor of this minimal restoration and was never pushed. `node tests/audio.cjs` uses real OfflineAudioContext renders to compare against the quieter APK baseline: stronger slide, bit-identical snap, combined headroom, mute/rest silence. Check current CI before delivering the rebuilt APK. Final listening acceptance remains with Joe on Android. Previous store screenshots remain visually representative; old runtime/build checksums describe 0.1.0 only.
-
-
-## Current submission candidate – 0.1.2
-
-See [release record](docs/RELEASE_0.1.2.md) for current signing, policy, branding and account gates. (From docs/, use RELEASE_0.1.2.md.) Version 0.1.1 audio was accepted by Joe on Android. Version 0.1.2 preserves that audio and adds final launcher artwork and offline privacy text. Older provisional-icon/unsigned-build notes above describe historical artifacts; current candidate build/signing results must be checked against this release record.
+Current focus remains Klotski. Complete its release stage and verified itch.io update before advancing to Ascension, then Paradigm Shift. itch.io has not been updated by this work.
