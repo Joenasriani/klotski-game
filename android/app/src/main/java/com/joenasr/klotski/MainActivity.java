@@ -40,7 +40,11 @@ public final class MainActivity extends ComponentActivity {
             root.requestApplyInsets();
         } else { root.setFitsSystemWindows(true); }
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override public void handleOnBackPressed() { moveTaskToBack(true); }
+            @Override public void handleOnBackPressed() {
+                if (webView == null) { moveTaskToBack(true); return; }
+                webView.evaluateJavascript("(function(){var d=document.getElementById('privacy-dialog');if(d&&d.open){d.close();return true;}return false;})()",
+                    handled -> { if (!"true".equals(handled)) moveTaskToBack(true); });
+            }
         });
         createGameView();
     }
