@@ -1,8 +1,11 @@
 name: Klotski readiness verification
 on:
   push:
-    branches: [main, 'fix/**']
+    branches: [main]
   pull_request:
+concurrency:
+  group: klotski-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

@@ -6,14 +6,16 @@ const server=spawn('python3',['-m','http.server','8000','--bind','127.0.0.1'],{s
 const url='http://127.0.0.1:8000/';
 const launch={headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']};
 (async()=>{
- let browser;
+ let browser; let page;
  try {
   for(let i=0;i<50;i++){try{await fetch(url);break;}catch{await new Promise(r=>setTimeout(r,100));}}
   browser=await chromium.launch(launch);
   const context=await browser.newContext({viewport:{width:900,height:800}});
-  const page=await context.newPage();const errors=[];const remote=[];
+  page=await context.newPage();page.setDefaultTimeout(15000);const errors=[];const remote=[];
+  console.log('Chromium launched; starting local-assets page');
   page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(!r.url().startsWith(url))remote.push(r.url());});
-  await page.goto(url);await page.waitForFunction(()=>typeof renderer!=='undefined' && !renderingFailed && blocks.length>0);
+  await page.goto(url);await page.waitForFunction(()=>typeof renderer!=='undefined' && !renderingFailed && blocks.length>0, null, {timeout:15000});
+  console.log('WebGL initialized');
   fs.mkdirSync('qa-results',{recursive:true});
   // Blocking every external host still permits local runtime assets and fonts.
   await context.route('**/*', route => route.request().url().startsWith(url) ? route.continue() : route.abort());await page.reload();await page.waitForFunction(()=>!renderingFailed && blocks.length===3);
@@ -58,5 +60,5 @@ const launch={headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swi
   await errorPage.addInitScript(()=>{const get=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return /webgl/.test(type)?null:get.call(this,type,...args);};});
   await errorPage.goto(url);await errorPage.locator('#runtime-error').waitFor({state:'visible'});await errorPage.screenshot({path:'qa-results/graphics-fallback.png'});
   console.log('PASS: external-network-independent boot, all-level progression, saved win/mute, responsive bounds, and graphics fallback');
- }finally {if(browser)await browser.close();server.kill();}
+ }finally {if(page){fs.mkdirSync('qa-results',{recursive:true});await page.screenshot({path:'qa-results/last-state.png'}).catch(()=>{});}if(browser)await browser.close();server.kill();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
