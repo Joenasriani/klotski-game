@@ -8,7 +8,7 @@ Play the published browser game: https://joenasr.itch.io/klotski
 
 The `main` branch is synchronized with the observed live game source retrieved and rechecked on 13 November 2026. Before this reconciliation, `main` at `fd25d4c493bf2c472af426573658b63308778f8f` lagged behind the itch.io upload. Responsive layout, startup camera framing, tray geometry fixes, and lower sliding volume were missing.
 
-**Android / Play Store readiness: blocked.** No Android wrapper, APK, AAB, signing configuration, store asset suite, or device acceptance evidence is included. This is an audit baseline, not a release candidate.
+**Android / Play Store readiness: blocked.** An Android preparation project is included on the readiness-fix branch. Production signing, final store assets, and Android device acceptance are still pending. This is not a store release candidate.
 
 ## Run locally
 
@@ -42,3 +42,5 @@ The earlier short identity README was deliberately removed in September. This ne
 Branch `fix/klotski-android-readiness` adds local dependencies, validated progress restoration, pointer ownership and interruption cleanup, mute control, 44 px minimum button height, resize framing, geometry disposal, and a graphics-failure recovery screen. The original live-source baseline remains recoverable in git. These changes are not deployed to itch.io.
 
 QA: `npm run test:state` checks state/input logic using real Three.js math with a renderer adapter. `npm run test:browser` generates legal solution paths and replays rendered drags in Chromium. CI saves screenshots as an artifact. Neither test replaces Android hardware acceptance.
+
+Android preparation source is in [android/](android/) with [build and acceptance notes](docs/ANDROID_PREPARATION.md). CI builds a debug installation APK and an unsigned release AAB only after browser checks pass. Neither is a production-signed store release.

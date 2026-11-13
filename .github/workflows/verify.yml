@@ -26,3 +26,26 @@ jobs:
         with:
           name: klotski-browser-evidence
           path: qa-results/
+
+  android-preparation:
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - run: gradle -p android :app:assembleDebug :app:bundleRelease :app:lintDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: klotski-android-preparation
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/reports/lint-results-debug.html
