@@ -72,3 +72,8 @@ The Android workflow passed and generated a debug test APK and an unsigned relea
 ## Android audio correction – 13 November 2026
 
 Joe reported low sliding audio on the physical Android test. History comparison identified the live-source sync (960dcf6) reduced the original slide multiplier/cap from 0.8/0.05 to 0.25/0.015. Version 0.1.1 (versionCode 2) restores 0.8/0.05 while preserving mute/background guards and the original 400 Hz filter and snap effect. The earlier local proposal to redesign/amplify the snap was rejected in favor of this minimal restoration and was never pushed. `node tests/audio.cjs` uses real OfflineAudioContext renders to compare against the quieter APK baseline: stronger slide, bit-identical snap, combined headroom, mute/rest silence. Check current CI before delivering the rebuilt APK. Final listening acceptance remains with Joe on Android. Previous store screenshots remain visually representative; old runtime/build checksums describe 0.1.0 only.
+
+
+## Current submission candidate – 0.1.2
+
+See [release record](docs/RELEASE_0.1.2.md) for current signing, policy, branding and account gates. (From docs/, use RELEASE_0.1.2.md.) Version 0.1.1 audio was accepted by Joe on Android. Version 0.1.2 preserves that audio and adds final launcher artwork and offline privacy text. Older provisional-icon/unsigned-build notes above describe historical artifacts; current candidate build/signing results must be checked against this release record.

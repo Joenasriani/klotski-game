@@ -16,6 +16,12 @@ const launch={headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swi
   page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(!r.url().startsWith(url))remote.push(r.url());});
   await page.goto(url);await page.waitForFunction(()=>typeof renderer!=='undefined' && !renderingFailed && blocks.length>0, null, {timeout:15000});
   console.log('WebGL initialized');
+  await page.locator('#privacy-btn').click();
+  await page.locator('#privacy-dialog[open]').waitFor();
+  assert((await page.locator('#privacy-dialog').innerText()).includes('questrequestvr@gmail.com'));
+  await page.getByRole('button',{name:'Close privacy policy'}).click();
+  assert.equal(await page.locator('#privacy-dialog').isVisible(),false);
+  console.log('PASS: offline privacy dialog opens, displays contact and closes');
   fs.mkdirSync('qa-results',{recursive:true});
   // Blocking every external host still permits local runtime assets and fonts.
   await context.route('**/*', route => route.request().url().startsWith(url) ? route.continue() : route.abort());await page.reload();await page.waitForFunction(()=>!renderingFailed && blocks.length===3);

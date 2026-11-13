@@ -302,6 +302,11 @@
         #runtime-error { position: fixed; inset: 0; z-index: 100; background: #1a1a1a; color: white; display: grid; place-content: center; padding: 24px; text-align: center; }
         #runtime-error[hidden] { display: none; }
         @media (max-width: 380px) { header { flex-wrap: wrap; } .level-controls { margin-left: auto; } }
+        #privacy-btn { position:absolute;left:calc(12px + var(--safe-left));bottom:calc(50px + var(--safe-bottom));min-height:44px; }
+        #privacy-dialog { box-sizing:border-box;background:#202020;color:#eee;border:1px solid #555;border-radius:12px;width:min(680px,94vw);max-height:82vh;padding:24px;overflow:auto;font:15px/1.6 Poppins,sans-serif; }
+        #privacy-dialog::backdrop {background:rgba(0,0,0,.8)}
+        #privacy-dialog h1 {font-size:22px;white-space:normal;line-height:1.3}
+        #privacy-dialog p {white-space:normal} #privacy-dialog button {min-height:44px}
     </style>
 </head>
 <body>
@@ -323,6 +328,8 @@
         </div>
     </div>
 
+    <button id="privacy-btn" onclick="suspendGame();document.getElementById('privacy-dialog').showModal()">Privacy</button>
+    <dialog id="privacy-dialog" aria-label="Klotski Privacy Policy"><h1>Klotski Privacy Policy</h1><p>Klotski does not collect or share personal data. The inspected Android build does not include advertising, analytics, account registration, in-app purchases, or the Android INTERNET permission. Its game files and fonts are bundled with the app.</p><p>Local game data<br>The app stores your unlocked levels, current puzzle positions, current level, and sound preference in local WebView storage on your device. This information is used to restore your game. It is not transmitted to the developer or third parties. The app does not request camera, microphone, location, contacts, or shared-file access.</p><p>Retention and deletion<br>Local progress remains until you clear the app&#x27;s storage or uninstall it. You can delete it using Android Settings &gt; Apps &gt; Klotski &gt; Storage &gt; Clear storage (wording varies by device). Restarting a puzzle resets that puzzle; it does not delete all saved progress. Android backup is disabled in the inspected app configuration.</p><p>Third-party software and services<br>The app uses bundled Three.js, OrbitControls, Poppins fonts, and AndroidX components. The inspected game does not use these components to send data off the device. Google Play and Android may process information under their own policies when you use their services; this policy describes the Klotski app itself.</p><p>Children and accounts<br>Klotski has no user accounts or social features and does not knowingly collect personal data from children or other players.</p><p>Questions and updates<br>Contact questrequestvr@gmail.com with privacy questions. If you email the developer, the contents of your message are handled to respond to your request. This policy will be updated if the app&#x27;s data practices change.</p><form method="dialog"><button autofocus>Close privacy policy</button></form></dialog>
     <button id="sound-btn" aria-pressed="false" onclick="toggleSound()">Sound: On</button>
     <div id="runtime-error" role="alert" hidden><h2>3D graphics unavailable</h2><p>Your device could not start or restore the game’s 3D view.</p><button onclick="location.reload()">Try again</button></div>
     <div id="win-overlay" role="dialog" aria-label="Level complete">
