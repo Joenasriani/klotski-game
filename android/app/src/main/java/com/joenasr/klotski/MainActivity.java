@@ -1,6 +1,5 @@
 package com.joenasr.klotski;
 
-import android.app.Activity;
 import android.os.Build;
 import android.os.Bundle;
 import android.graphics.Color;
@@ -15,12 +14,13 @@ import android.webkit.WebViewClient;
 import android.webkit.RenderProcessGoneDetail;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import android.window.OnBackInvokedDispatcher;
+import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
 import androidx.webkit.WebViewAssetLoader;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 
-public final class MainActivity extends Activity {
+public final class MainActivity extends ComponentActivity {
     private static final String START = "https://appassets.androidplatform.net/assets/www/index.html";
     private FrameLayout root;
     private WebView webView;
@@ -39,10 +39,9 @@ public final class MainActivity extends Activity {
             });
             root.requestApplyInsets();
         } else { root.setFitsSystemWindows(true); }
-        if (Build.VERSION.SDK_INT >= 33) {
-            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                OnBackInvokedDispatcher.PRIORITY_DEFAULT, () -> moveTaskToBack(true));
-        }
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() { moveTaskToBack(true); }
+        });
         createGameView();
     }
 
@@ -92,5 +91,4 @@ public final class MainActivity extends Activity {
     @Override protected void onPause() { saveAndSilence(); if (webView != null) webView.onPause(); super.onPause(); }
     @Override protected void onResume() { super.onResume(); if (webView != null) webView.onResume(); }
     @Override protected void onDestroy() { if (webView != null) { root.removeView(webView); webView.destroy(); webView = null; } super.onDestroy(); }
-    @Override @SuppressWarnings("deprecation") public void onBackPressed() { moveTaskToBack(true); }
 }

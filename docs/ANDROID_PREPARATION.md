@@ -4,10 +4,10 @@ Status: preparation branch only; build and physical-device acceptance must be re
 
 - Proposed new application ID: `com.joenasr.klotski`. Not confirmed as an existing Play Console application; do not change after first publication without reviewing release identity consequences.
 - Version: `0.1.0` / code `1`; minimum Android 8 / API 26; compile/target API 36.
-- Toolchain: JDK 17, Gradle 8.13, Android Gradle Plugin 8.13.0, Android SDK platform 36, AndroidX WebKit 1.14.0.
+- Toolchain: JDK 17, Gradle 8.13, Android Gradle Plugin 8.13.0, Android SDK platform 36, AndroidX WebKit 1.14.0 and Activity 1.10.1.
 - Local assets load through WebViewAssetLoader on the reserved appassets HTTPS origin. There is no INTERNET permission, remote gameplay host, analytics SDK, ad SDK, JavaScript bridge, or login.
 - Per-move save data lives in WebView local storage. Uninstall/clear-app-data removes it. Backup is disabled. Storage denial falls back gracefully in browser builds.
-- Rotation resizes the existing WebView; native system/cutout insets pad the game surface. Back backgrounds the task. Pause/focus loss requests drag cancellation, saving, and silence. These behaviors need physical-device testing.
+- Rotation resizes the existing WebView; native system/cutout insets pad the game surface. Back uses the AndroidX back dispatcher and backgrounds the task. Pause/focus loss requests drag cancellation, saving, and silence. These behaviors need physical-device testing.
 - Launcher graphic is a provisional vector derived from the existing board/colors; it is not the final Play Store logo suite.
 
 ## Build

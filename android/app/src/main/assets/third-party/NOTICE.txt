@@ -1,0 +1,9 @@
+Klotski Android preparation – native third-party components
+
+AndroidX WebKit, AndroidX Activity, their AndroidX dependencies, and Kotlin runtime components are distributed under the Apache License, Version 2.0. The complete license accompanies this notice in Apache-2.0.txt.
+
+Upstream projects and copyright/notice sources:
+https://android.googlesource.com/platform/frameworks/support/
+https://github.com/JetBrains/kotlin
+
+The web runtime has separate upstream notices in assets/www/vendor/THREE-LICENSE.txt (MIT) and assets/www/vendor/Poppins-OFL.txt (OFL). No license for Klotski itself is granted by these third-party notices.
